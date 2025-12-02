@@ -39,7 +39,7 @@ class OrderAdapter(
             costParts.add("📦${order.suppliesCost}")
         }
         if (order.intelCost > 0) {
-            costParts.add("🔍${order.intelCost}")
+            costParts.add("🧠${order.intelCost}")
         }
         holder.orderCost.text = if (costParts.isEmpty()) {
             "Free"

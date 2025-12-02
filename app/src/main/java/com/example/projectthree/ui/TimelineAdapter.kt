@@ -20,6 +20,7 @@ class TimelineAdapter(
         val turnNumber: TextView = itemView.findViewById(R.id.turnNumber)
         val eventIcon: TextView = itemView.findViewById(R.id.eventIcon)
         val eventName: TextView = itemView.findViewById(R.id.eventName)
+        val eventSubtitle: TextView = itemView.findViewById(R.id.eventSubtitle)
         val orderIcon: TextView = itemView.findViewById(R.id.orderIcon)
         val slotContainer: View = itemView.findViewById(R.id.slotContainer)
     }
@@ -34,17 +35,38 @@ class TimelineAdapter(
         val slot = slots[position]
         val event = slot.getDisplayEvent()
         
-        holder.turnNumber.text = "Turn ${slot.turnNumber}"
+        // Set turn number (just the number)
+        holder.turnNumber.text = slot.turnNumber.toString()
         
         // Handle fog display
         if (slot.event is Event.Fog && !slot.isRevealed) {
             // Show fog (unrevealed)
-            holder.eventIcon.text = "🌫️"
-            holder.eventName.text = "Fog"
+            holder.eventIcon.text = "☁️"
+            holder.eventName.text = "Fog / Ambush"
+            holder.eventSubtitle.text = "Hidden event. Use Scout to reveal."
         } else {
             // Show the actual event (or revealed hidden event)
             holder.eventIcon.text = event.icon
             holder.eventName.text = event.name
+            
+            // Set subtitle based on event type
+            val subtitle = when (event) {
+                is Event.EnemyAttack -> {
+                    val strengthText = when (event.strength) {
+                        Event.AttackStrength.SMALL -> "Small raid"
+                        Event.AttackStrength.MEDIUM -> "Raid"
+                        Event.AttackStrength.LARGE -> "Big raid"
+                    }
+                    "$strengthText. Deals ${event.damage} damage."
+                }
+                is Event.SupplyDrop -> "Receive ${event.baseAmount} supplies."
+                is Event.DelayField -> "Shifts later events down by ${event.shiftAmount} turn(s)."
+                is Event.Fog -> {
+                    // This shouldn't happen if revealed, but handle it
+                    "Hidden event."
+                }
+            }
+            holder.eventSubtitle.text = subtitle
         }
         
         // Show order if present

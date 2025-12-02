@@ -8,9 +8,18 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     
-    <!-- Event colors -->
-    <color name="event_attack">#FFEBEE</color>
-    <color name="event_supply">#FFF3E0</color>
-    <color name="event_fog">#E3F2FD</color>
-    <color name="event_delay">#F3E5F5</color>
+    <!-- Dark theme colors -->
+    <color name="background_dark">#1A1A1A</color>
+    <color name="card_dark">#2D2D2D</color>
+    <color name="text_light">#FFFFFF</color>
+    <color name="text_secondary">#CCCCCC</color>
+    <color name="badge_grey">#404040</color>
+    <color name="button_yellow">#FFD700</color>
+    <color name="button_yellow_dark">#FFA500</color>
+    
+    <!-- Event colors (dark theme) -->
+    <color name="event_attack">#3D2D2D</color>
+    <color name="event_supply">#2D3D2D</color>
+    <color name="event_fog">#2D2D3D</color>
+    <color name="event_delay">#3D3D2D</color>
 </resources>

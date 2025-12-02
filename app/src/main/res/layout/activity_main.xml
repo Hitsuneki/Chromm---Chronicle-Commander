@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F5F5F5"
+    android:background="@color/background_dark"
     tools:context=".MainActivity">
 
     <!-- Top Stats Bar -->
@@ -16,7 +16,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:padding="16dp"
-        android:background="#FFFFFF"
+        android:background="@color/card_dark"
         android:elevation="4dp">
 
         <LinearLayout
@@ -30,9 +30,9 @@
                 android:id="@+id/hpLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="HP"
-                android:textSize="12sp"
-                android:textColor="#666666" />
+                android:text="❤️ HP"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary" />
 
             <TextView
                 android:id="@+id/hpValue"
@@ -41,7 +41,7 @@
                 android:text="100"
                 android:textSize="20sp"
                 android:textStyle="bold"
-                android:textColor="#E53935" />
+                android:textColor="@color/text_light" />
         </LinearLayout>
 
         <LinearLayout
@@ -55,9 +55,9 @@
                 android:id="@+id/suppliesLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Supplies"
-                android:textSize="12sp"
-                android:textColor="#666666" />
+                android:text="📦 Supplies"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary" />
 
             <TextView
                 android:id="@+id/suppliesValue"
@@ -66,7 +66,7 @@
                 android:text="10"
                 android:textSize="20sp"
                 android:textStyle="bold"
-                android:textColor="#FF9800" />
+                android:textColor="@color/text_light" />
         </LinearLayout>
 
         <LinearLayout
@@ -80,9 +80,9 @@
                 android:id="@+id/intelLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Intel"
-                android:textSize="12sp"
-                android:textColor="#666666" />
+                android:text="🧠 Intel"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary" />
 
             <TextView
                 android:id="@+id/intelValue"
@@ -91,7 +91,7 @@
                 android:text="5"
                 android:textSize="20sp"
                 android:textStyle="bold"
-                android:textColor="#2196F3" />
+                android:textColor="@color/text_light" />
         </LinearLayout>
 
         <LinearLayout
@@ -104,9 +104,9 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Wave"
+                android:text="WAVE"
                 android:textSize="12sp"
-                android:textColor="#666666" />
+                android:textColor="@color/text_secondary" />
 
             <TextView
                 android:id="@+id/waveValue"
@@ -115,7 +115,7 @@
                 android:text="1"
                 android:textSize="20sp"
                 android:textStyle="bold"
-                android:textColor="#9C27B0" />
+                android:textColor="@color/text_light" />
         </LinearLayout>
 
     </LinearLayout>
@@ -126,7 +126,8 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:padding="8dp"
+        android:padding="12dp"
+        android:background="@color/background_dark"
         tools:listitem="@layout/item_timeline_slot" />
 
     <!-- Orders Bar -->
@@ -134,18 +135,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="#FFFFFF"
+        android:background="@color/card_dark"
         android:elevation="4dp"
-        android:padding="8dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Orders (drag to timeline)"
-            android:textSize="12sp"
-            android:textColor="#666666"
-            android:paddingStart="8dp"
-            android:paddingBottom="4dp" />
+        android:padding="12dp">
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/ordersRecyclerView"
@@ -159,12 +151,12 @@
             android:id="@+id/resolveButton"
             android:layout_width="match_parent"
             android:layout_height="60dp"
-            android:layout_margin="8dp"
-            android:text="RESOLVE TURNS"
+            android:layout_marginTop="12dp"
+            android:text="Resolve Turn"
             android:textSize="18sp"
             android:textStyle="bold"
-            android:backgroundTint="#4CAF50"
-            android:textColor="#FFFFFF" />
+            android:backgroundTint="@color/button_yellow"
+            android:textColor="#000000" />
 
     </LinearLayout>
 

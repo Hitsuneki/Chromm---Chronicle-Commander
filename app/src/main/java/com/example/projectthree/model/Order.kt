@@ -28,7 +28,7 @@ sealed class Order {
     object Harvest : Order() {
         override val name: String = "Harvest"
         override val icon: String = "🌾"
-        override val suppliesCost: Int = 0
+        override val suppliesCost: Int = 1
         override val intelCost: Int = 0
         const val bonusMultiplier: Float = 1.5f // 50% bonus
     }
@@ -38,9 +38,9 @@ sealed class Order {
      */
     object Delay : Order() {
         override val name: String = "Delay"
-        override val icon: String = "⏸️"
-        override val suppliesCost: Int = 1
-        override val intelCost: Int = 0
+        override val icon: String = "⏳"
+        override val suppliesCost: Int = 0
+        override val intelCost: Int = 2
         const val shiftAmount: Int = 1
     }
     
@@ -51,7 +51,7 @@ sealed class Order {
         override val name: String = "Scout"
         override val icon: String = "🔍"
         override val suppliesCost: Int = 0
-        override val intelCost: Int = 2
+        override val intelCost: Int = 1
     }
 }
 

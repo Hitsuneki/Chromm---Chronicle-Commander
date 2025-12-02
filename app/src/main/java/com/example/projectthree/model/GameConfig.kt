@@ -9,9 +9,9 @@ object GameConfig {
     const val MAX_SLOTS = 8
     
     // Starting resources
-    const val STARTING_HP = 100
-    const val STARTING_SUPPLIES = 10
-    const val STARTING_INTEL = 5
+    const val STARTING_HP = 20
+    const val STARTING_SUPPLIES = 5
+    const val STARTING_INTEL = 2
     
     // Orders per round
     const val INITIAL_ORDERS_PER_ROUND = 3
@@ -23,12 +23,12 @@ object GameConfig {
     const val WEIGHT_DELAY_FIELD = 10
     
     // Damage values
-    const val DAMAGE_SMALL_RAID = 10
-    const val DAMAGE_MEDIUM_RAID = 20
-    const val DAMAGE_LARGE_RAID = 35
+    const val DAMAGE_SMALL_RAID = 5
+    const val DAMAGE_MEDIUM_RAID = 15
+    const val DAMAGE_LARGE_RAID = 30
     
     // Supply drop amounts
-    const val SUPPLY_DROP_BASE = 5
+    const val SUPPLY_DROP_BASE = 3
     
     // Difficulty scaling
     fun getSlotsForWave(wave: Int): Int {

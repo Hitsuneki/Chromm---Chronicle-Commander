@@ -15,11 +15,11 @@ sealed class Event {
         val strength: AttackStrength = AttackStrength.SMALL
     ) : Event() {
         override val name: String = when (strength) {
-            AttackStrength.SMALL -> "Small Raid"
-            AttackStrength.MEDIUM -> "Raid"
-            AttackStrength.LARGE -> "Big Raid"
+            AttackStrength.SMALL -> "Enemy Attack"
+            AttackStrength.MEDIUM -> "Enemy Attack"
+            AttackStrength.LARGE -> "Enemy Attack"
         }
-        override val icon: String = "⚔️"
+        override val icon: String = "💀"
     }
     
     /**
@@ -38,8 +38,8 @@ sealed class Event {
     data class Fog(
         val hiddenEvent: Event? = null // The actual event hidden inside
     ) : Event() {
-        override val name: String = "Fog"
-        override val icon: String = "🌫️"
+        override val name: String = "Fog / Ambush"
+        override val icon: String = "☁️"
     }
     
     /**
