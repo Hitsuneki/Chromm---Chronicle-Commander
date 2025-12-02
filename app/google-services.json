@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "454025482286",
+    "project_id": "chromm-6ccdb",
+    "storage_bucket": "chromm-6ccdb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:454025482286:android:17e58c916a10e74b780fbf",
+        "android_client_info": {
+          "package_name": "com.example.projectthree"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYb3LQnAD_lu8i9BMI1pe8K-Y8sWgbuCg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
