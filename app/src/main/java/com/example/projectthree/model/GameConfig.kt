@@ -26,6 +26,7 @@ object GameConfig {
     const val DAMAGE_SMALL_RAID = 5
     const val DAMAGE_MEDIUM_RAID = 15
     const val DAMAGE_LARGE_RAID = 30
+    const val DAMAGE_BOSS_RAID = 40  // Boss Raid base damage
     
     // Supply drop amounts
     const val SUPPLY_DROP_BASE = 3

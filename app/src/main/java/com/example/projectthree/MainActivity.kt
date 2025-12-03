@@ -285,10 +285,8 @@ class MainActivity : AppCompatActivity() {
         // Update orders (refresh affordability)
         orderAdapter.notifyDataSetChanged()
         
-        // Update resolve button
-        val ordersPlaced = gameEngine.gameState.ordersPlacedThisRound
-        val maxOrders = gameEngine.gameState.maxOrdersPerRound
-        resolveButton.text = "RESOLVE TURNS ($ordersPlaced/$maxOrders)"
+        // Update resolve button (no limit on orders)
+        resolveButton.text = "RESOLVE TURNS"
     }
     
     private fun showGameOverDialog() {

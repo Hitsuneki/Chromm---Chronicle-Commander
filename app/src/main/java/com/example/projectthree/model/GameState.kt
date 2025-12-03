@@ -8,7 +8,7 @@ data class GameState(
     var supplies: Int = 10,
     var intel: Int = 5,
     var wave: Int = 1,
-    var maxOrdersPerRound: Int = 3,
+    var maxOrdersPerRound: Int = Int.MAX_VALUE,  // No limit on orders per round
     var ordersPlacedThisRound: Int = 0
 ) {
     fun isGameOver(): Boolean = hp <= 0

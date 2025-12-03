@@ -90,5 +90,18 @@ sealed class Order {
         const val healAmount: Int = 7
         const val bonusOnHospital: Int = 3  // Extra heal when combined with Field Hospital
     }
+    
+    /**
+     * Fortify - grants armor for the next 2 turns
+     * Buff over time instead of one turn
+     */
+    object Fortify : Order() {
+        override val name: String = "Fortify"
+        override val icon: String = "🏰"
+        override val suppliesCost: Int = 3
+        override val intelCost: Int = 0
+        const val armorBonus: Int = 2  // Grants +2 armor for next 2 turns
+        const val duration: Int = 2    // Lasts 2 turns
+    }
 }
 

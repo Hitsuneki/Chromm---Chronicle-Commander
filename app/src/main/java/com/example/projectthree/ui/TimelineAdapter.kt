@@ -59,6 +59,7 @@ class TimelineAdapter(
                     }
                     "$strengthText. Deals ${event.damage} damage."
                 }
+                is Event.BossRaid -> "Boss Raid! Deals ${event.damage} damage."
                 is Event.SupplyDrop -> "Receive ${event.baseAmount} supplies."
                 is Event.FieldHospital -> "Restore ${event.healAmount} HP."
                 is Event.DelayField -> "Shifts later events down by ${event.shiftAmount} turn(s)."
@@ -81,6 +82,7 @@ class TimelineAdapter(
         // Color coding for event types (use actual event, not display event for fog)
         val backgroundColor = when (slot.event) {
             is Event.EnemyAttack -> ContextCompat.getColor(holder.itemView.context, R.color.event_attack)
+            is Event.BossRaid -> ContextCompat.getColor(holder.itemView.context, R.color.event_attack) // Boss uses attack color but darker
             is Event.SupplyDrop -> ContextCompat.getColor(holder.itemView.context, R.color.event_supply)
             is Event.FieldHospital -> ContextCompat.getColor(holder.itemView.context, R.color.event_supply) // Use supply color for hospital
             is Event.Fog -> ContextCompat.getColor(holder.itemView.context, R.color.event_fog)

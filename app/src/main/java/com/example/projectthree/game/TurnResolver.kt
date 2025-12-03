@@ -36,8 +36,10 @@ object TurnResolver {
             }
             is Order.Analyze -> {
                 // Analyze gains Intel and reveals Fog if placed on it
-                intelChange += Order.Analyze.intelGain
-                messages.add("Analyze gained ${Order.Analyze.intelGain} Intel")
+                var intelGain = Order.Analyze.intelGain
+                // Check for Analyze chain bonus (will be checked in combo bonuses)
+                intelChange += intelGain
+                messages.add("Analyze gained $intelGain Intel")
                 if (slot.event is Event.Fog && !slot.isRevealed) {
                     slot.isRevealed = true
                     messages.add("Analyze also revealed the fog!")
@@ -45,13 +47,21 @@ object TurnResolver {
             }
             is Order.Forage -> {
                 // Forage gains Supplies
-                suppliesChange += Order.Forage.suppliesGain
-                messages.add("Forage gained ${Order.Forage.suppliesGain} Supplies")
+                var suppliesGain = Order.Forage.suppliesGain
+                // Check for Forage chain bonus (will be checked in combo bonuses)
+                suppliesChange += suppliesGain
+                messages.add("Forage gained $suppliesGain Supplies")
             }
             is Order.Medkit -> {
                 // Medkit heals HP (no cap)
-                hpChange += Order.Medkit.healAmount
-                messages.add("Medkit healed ${Order.Medkit.healAmount} HP")
+                var healAmount = Order.Medkit.healAmount
+                // Check for Medkit chain bonus (will be checked in combo bonuses)
+                hpChange += healAmount
+                messages.add("Medkit healed $healAmount HP")
+            }
+            is Order.Fortify -> {
+                // Fortify grants armor for next 2 turns (handled in side effects)
+                messages.add("Fortify activated - armor for next 2 turns")
             }
             // Other order effects are applied during event resolution
             else -> {}
@@ -68,8 +78,9 @@ object TurnResolver {
                     messages.add("Armor reduced damage by ${slot.armorBonus}")
                 }
                 
-                // Apply Defend order
+                // Apply Defend order (check for chain bonus)
                 if (order is Order.Defend) {
+                    // Check if this is part of a Defend chain for extra protection
                     damage = 0
                     messages.add("Defend blocked all damage!")
                     // Defend grants armor for next turn (handled separately)
@@ -77,6 +88,25 @@ object TurnResolver {
                     hpChange -= damage
                     messages.add("Took $damage damage")
                 }
+            }
+            
+            is Event.BossRaid -> {
+                var damage = event.damage
+                
+                // Apply armor bonus from previous turn
+                damage = (damage - slot.armorBonus).coerceAtLeast(0)
+                if (slot.armorBonus > 0) {
+                    messages.add("Armor reduced Boss damage by ${slot.armorBonus}")
+                }
+                
+                // Apply Defend order (Boss Raid is stronger, Defend reduces but doesn't block completely)
+                if (order is Order.Defend) {
+                    damage = (damage * 0.5f).toInt()  // Defend reduces Boss damage by 50%
+                    messages.add("Defend reduced Boss damage!")
+                }
+                
+                hpChange -= damage
+                messages.add("Boss Raid! Took $damage damage")
             }
             
             is Event.SupplyDrop -> {
@@ -114,14 +144,29 @@ object TurnResolver {
                 if (!slot.isRevealed) {
                     // If fog is not revealed, treat it as a hidden attack
                     val hiddenEvent = event.hiddenEvent
-                    if (hiddenEvent is Event.EnemyAttack) {
-                        var damage = hiddenEvent.damage
-                        if (order is Order.Defend) {
-                            damage = 0
-                            messages.add("Defend blocked hidden attack!")
-                        } else {
+                    when {
+                        hiddenEvent is Event.EnemyAttack -> {
+                            var damage = hiddenEvent.damage
+                            // Apply armor
+                            damage = (damage - slot.armorBonus).coerceAtLeast(0)
+                            if (order is Order.Defend) {
+                                damage = 0
+                                messages.add("Defend blocked hidden attack!")
+                            } else {
+                                hpChange -= damage
+                                messages.add("Ambush! Took $damage damage")
+                            }
+                        }
+                        hiddenEvent is Event.BossRaid -> {
+                            var damage = hiddenEvent.damage
+                            // Apply armor
+                            damage = (damage - slot.armorBonus).coerceAtLeast(0)
+                            if (order is Order.Defend) {
+                                damage = (damage * 0.5f).toInt()  // Defend reduces Boss damage by 50%
+                                messages.add("Defend reduced hidden Boss damage!")
+                            }
                             hpChange -= damage
-                            messages.add("Ambush! Took $damage damage")
+                            messages.add("Boss Ambush! Took $damage damage")
                         }
                     }
                 }
@@ -137,17 +182,129 @@ object TurnResolver {
     }
     
     /**
-     * Apply side effects from orders (like Defend's armor bonus)
+     * Apply side effects from orders (like Defend's armor bonus, Fortify's multi-turn armor)
      */
-    fun applyOrderSideEffects(slot: TimelineSlot, nextSlot: TimelineSlot?) {
+    fun applyOrderSideEffects(slot: TimelineSlot, timeline: List<TimelineSlot>, slotIndex: Int) {
         when (slot.order) {
             is Order.Defend -> {
                 // Grant armor to next turn
-                nextSlot?.let {
-                    it.armorBonus += Order.Defend.armorBonus
+                if (slotIndex < timeline.size - 1) {
+                    timeline[slotIndex + 1].armorBonus += Order.Defend.armorBonus
+                }
+            }
+            is Order.Fortify -> {
+                // Grant armor to next 2 turns
+                for (i in 1..Order.Fortify.duration) {
+                    if (slotIndex + i < timeline.size) {
+                        timeline[slotIndex + i].armorBonus += Order.Fortify.armorBonus
+                    }
                 }
             }
             else -> {}
+        }
+    }
+    
+    /**
+     * Check for combo bonuses: same event type streaks and order chains
+     */
+    fun checkComboBonuses(
+        timeline: List<TimelineSlot>,
+        currentIndex: Int,
+        result: TurnResult
+    ): TurnResult {
+        var hpChange = result.hpChange
+        var suppliesChange = result.suppliesChange
+        var intelChange = result.intelChange
+        val messages = mutableListOf<String>()
+        
+        // Check for event type streaks (2-3 of same type in a row)
+        if (currentIndex >= 2) {
+            val event1 = timeline[currentIndex - 2].getDisplayEvent()
+            val event2 = timeline[currentIndex - 1].getDisplayEvent()
+            val event3 = timeline[currentIndex].getDisplayEvent()
+            
+            // Check for 3 in a row
+            if (isSameEventType(event1, event2) && isSameEventType(event2, event3)) {
+                when {
+                    event3 is Event.SupplyDrop -> {
+                        // Supply Chain: third Supply Drop gives double
+                        val bonus = event3.baseAmount
+                        suppliesChange += bonus
+                        messages.add("Supply Chain! +$bonus bonus Supplies")
+                    }
+                    event3 is Event.FieldHospital -> {
+                        // Healing Chain: third Field Hospital gives bonus heal
+                        val bonus = 5
+                        hpChange += bonus
+                        messages.add("Healing Chain! +$bonus bonus HP")
+                    }
+                }
+            } else if (isSameEventType(event2, event3)) {
+                // 2 in a row (smaller bonus)
+                if (event3 is Event.SupplyDrop) {
+                    val bonus = event3.baseAmount / 2
+                    suppliesChange += bonus
+                    messages.add("Supply Pair! +$bonus bonus Supplies")
+                }
+            }
+        }
+        
+        // Check for order chains (same order on consecutive turns)
+        if (currentIndex >= 1) {
+            val prevOrder = timeline[currentIndex - 1].order
+            val currentOrder = timeline[currentIndex].order
+            
+                if (prevOrder != null && currentOrder != null && prevOrder::class == currentOrder::class) {
+                when (currentOrder) {
+                    is Order.Defend -> {
+                        // Defend chain: extra armor bonus for next turn
+                        messages.add("Defend Chain! Extra protection")
+                        // Extra armor is applied in side effects
+                        if (currentIndex < timeline.size - 1) {
+                            timeline[currentIndex + 1].armorBonus += 1
+                        }
+                    }
+                    is Order.Analyze -> {
+                        // Analyze chain: bonus Intel
+                        val bonus = 2
+                        intelChange += bonus
+                        messages.add("Analyze Chain! +$bonus bonus Intel")
+                    }
+                    is Order.Forage -> {
+                        // Forage chain: bonus Supplies
+                        val bonus = 2
+                        suppliesChange += bonus
+                        messages.add("Forage Chain! +$bonus bonus Supplies")
+                    }
+                    is Order.Medkit -> {
+                        // Medkit chain: bonus heal
+                        val bonus = 3
+                        hpChange += bonus
+                        messages.add("Medkit Chain! +$bonus bonus HP")
+                    }
+                    else -> {}
+                }
+            }
+        }
+        
+        return TurnResult(
+            hpChange = hpChange,
+            suppliesChange = suppliesChange,
+            intelChange = intelChange,
+            message = (result.message + " " + messages.joinToString(". ")).trim()
+        )
+    }
+    
+    /**
+     * Check if two events are of the same type (for combo detection)
+     */
+    private fun isSameEventType(event1: Event, event2: Event): Boolean {
+        return when {
+            event1 is Event.SupplyDrop && event2 is Event.SupplyDrop -> true
+            event1 is Event.FieldHospital && event2 is Event.FieldHospital -> true
+            event1 is Event.EnemyAttack && event2 is Event.EnemyAttack -> true
+            event1 is Event.BossRaid && event2 is Event.BossRaid -> true
+            else -> false
         }
     }
 }

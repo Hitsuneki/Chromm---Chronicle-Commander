@@ -23,6 +23,17 @@ sealed class Event {
     }
     
     /**
+     * Boss Raid - stronger Enemy Attack that hits harder but appears less often
+     * Always telegraphed with a special icon
+     */
+    data class BossRaid(
+        val damage: Int
+    ) : Event() {
+        override val name: String = "Boss Raid"
+        override val icon: String = "👹"
+    }
+    
+    /**
      * Supply Drop - grants Supplies when resolved
      */
     data class SupplyDrop(

@@ -61,6 +61,15 @@ object EventGenerator {
     }
     
     /**
+     * Generate a Boss Raid event (rare, telegraphed)
+     */
+    private fun generateBossRaid(wave: Int, difficulty: Difficulty): Event.BossRaid {
+        val baseDamage = GameConfig.DAMAGE_BOSS_RAID + (wave * 2)  // Scales with wave
+        val damage = (baseDamage * DifficultyConfig.getDamageMultiplier(difficulty)).toInt()
+        return Event.BossRaid(damage)
+    }
+    
+    /**
      * Generate multiple events for timeline with difficulty ramping.
      * Ensures max attacks per wave based on difficulty.
      */
@@ -73,16 +82,28 @@ object EventGenerator {
         val maxAttacks = DifficultyConfig.getMaxAttacksForWave(difficulty, wave)
         val events = mutableListOf<Event>()
         
-        // First, determine how many attacks we'll have (0 to maxAttacks)
-        val numAttacks = random.nextInt(maxAttacks + 1)
+        // Boss Raid appears rarely (10% chance per wave, but only if wave >= 3)
+        val hasBossRaid = wave >= 3 && random.nextFloat() < 0.1f
         
-        // Generate attack events
-        repeat(numAttacks) {
+        // First, determine how many regular attacks we'll have
+        val numRegularAttacks = if (hasBossRaid) {
+            random.nextInt(maxAttacks)  // One less slot for Boss Raid
+        } else {
+            random.nextInt(maxAttacks + 1)
+        }
+        
+        // Generate regular attack events
+        repeat(numRegularAttacks) {
             events.add(generateEnemyAttack(wave, difficulty))
         }
         
+        // Add Boss Raid if applicable
+        if (hasBossRaid) {
+            events.add(generateBossRaid(wave, difficulty))
+        }
+        
         // Generate non-attack events to fill remaining slots
-        repeat(count - numAttacks) {
+        repeat(count - events.size) {
             events.add(generateNonAttackEvent(wave, eventWeights))
         }
         

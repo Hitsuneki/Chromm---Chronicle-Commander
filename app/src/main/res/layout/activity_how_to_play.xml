@@ -311,6 +311,25 @@
                 android:text="Cost: 2 Supplies\nHeals 7 HP (no cap). +3 bonus if placed on Field Hospital."
                 android:textSize="14sp"
                 android:textColor="@color/text_secondary"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Fortify -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🏰 Fortify"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_light"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Cost: 3 Supplies\nGrants +2 armor for the next 2 turns. Plan around attack clusters."
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary"
                 android:layout_marginBottom="24dp" />
 
         </LinearLayout>

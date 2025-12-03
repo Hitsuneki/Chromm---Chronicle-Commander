@@ -56,7 +56,7 @@ class GameEngine(private val difficulty: Difficulty = Difficulty.NORMAL) {
      */
     fun placeOrder(slotIndex: Int, order: Order): Boolean {
         if (slotIndex < 0 || slotIndex >= timeline.size) return false
-        if (gameState.ordersPlacedThisRound >= gameState.maxOrdersPerRound) return false
+        // No limit on orders per round
         if (!gameState.canAffordOrder(order)) return false
         
         val slot = timeline[slotIndex]
@@ -111,11 +111,13 @@ class GameEngine(private val difficulty: Difficulty = Difficulty.NORMAL) {
                 return@forEachIndexed
             }
             
-            val result = TurnResolver.resolveSlot(slot, gameState)
+            var result = TurnResolver.resolveSlot(slot, gameState)
             
-            // Apply side effects to next slot
-            val nextSlot = if (index < timeline.size - 1) timeline[index + 1] else null
-            TurnResolver.applyOrderSideEffects(slot, nextSlot)
+            // Apply side effects (armor bonuses, etc.)
+            TurnResolver.applyOrderSideEffects(slot, timeline, index)
+            
+            // Check for combo bonuses
+            result = TurnResolver.checkComboBonuses(timeline, index, result)
             
             // Update game state
             gameState.hp += result.hpChange
@@ -217,7 +219,8 @@ class GameEngine(private val difficulty: Difficulty = Difficulty.NORMAL) {
             Order.Scout,
             Order.Analyze,
             Order.Forage,
-            Order.Medkit
+            Order.Medkit,
+            Order.Fortify
         )
     }
 }
