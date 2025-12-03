@@ -52,6 +52,16 @@ sealed class Event {
         override val icon: String = "⏱️"
     }
     
+    /**
+     * Field Hospital - heals HP when resolved
+     */
+    data class FieldHospital(
+        val healAmount: Int = 7
+    ) : Event() {
+        override val name: String = "Field Hospital"
+        override val icon: String = "🏥"
+    }
+    
     enum class AttackStrength {
         SMALL, MEDIUM, LARGE
     }

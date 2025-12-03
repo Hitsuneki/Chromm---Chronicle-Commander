@@ -60,6 +60,7 @@ class TimelineAdapter(
                     "$strengthText. Deals ${event.damage} damage."
                 }
                 is Event.SupplyDrop -> "Receive ${event.baseAmount} supplies."
+                is Event.FieldHospital -> "Restore ${event.healAmount} HP."
                 is Event.DelayField -> "Shifts later events down by ${event.shiftAmount} turn(s)."
                 is Event.Fog -> {
                     // This shouldn't happen if revealed, but handle it
@@ -81,6 +82,7 @@ class TimelineAdapter(
         val backgroundColor = when (slot.event) {
             is Event.EnemyAttack -> ContextCompat.getColor(holder.itemView.context, R.color.event_attack)
             is Event.SupplyDrop -> ContextCompat.getColor(holder.itemView.context, R.color.event_supply)
+            is Event.FieldHospital -> ContextCompat.getColor(holder.itemView.context, R.color.event_supply) // Use supply color for hospital
             is Event.Fog -> ContextCompat.getColor(holder.itemView.context, R.color.event_fog)
             is Event.DelayField -> ContextCompat.getColor(holder.itemView.context, R.color.event_delay)
         }

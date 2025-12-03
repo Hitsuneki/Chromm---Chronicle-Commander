@@ -5,10 +5,11 @@ import com.example.projectthree.model.*
 /**
  * Main game engine that manages the game state and timeline.
  */
-class GameEngine {
+class GameEngine(private val difficulty: Difficulty = Difficulty.NORMAL) {
     var gameState = GameState()
     var timeline: MutableList<TimelineSlot> = mutableListOf()
     private var currentTurnNumber = 1
+    private val eventWeights = DifficultyConfig.getEventWeights(difficulty)
     
     init {
         initializeGame()
@@ -16,9 +17,9 @@ class GameEngine {
     
     private fun initializeGame() {
         gameState = GameState(
-            hp = GameConfig.STARTING_HP,
-            supplies = GameConfig.STARTING_SUPPLIES,
-            intel = GameConfig.STARTING_INTEL,
+            hp = DifficultyConfig.getStartingHP(difficulty),
+            supplies = DifficultyConfig.getStartingSupplies(difficulty),
+            intel = DifficultyConfig.getStartingIntel(difficulty),
             wave = 1,
             maxOrdersPerRound = GameConfig.INITIAL_ORDERS_PER_ROUND
         )
@@ -30,7 +31,12 @@ class GameEngine {
      */
     fun generateNewTimeline() {
         val slotCount = GameConfig.getSlotsForWave(gameState.wave)
-        val events = EventGenerator.generateTimelineEvents(gameState.wave, slotCount)
+        val events = EventGenerator.generateTimelineEvents(
+            wave = gameState.wave,
+            count = slotCount,
+            difficulty = difficulty,
+            eventWeights = eventWeights
+        )
         
         timeline.clear()
         events.forEachIndexed { index, event ->
@@ -61,8 +67,8 @@ class GameEngine {
         gameState.spendOrderCosts(order)
         gameState.ordersPlacedThisRound++
         
-        // Scout reveals fog immediately
-        if (order is Order.Scout && slot.event is Event.Fog) {
+        // Scout and Analyze reveal fog immediately
+        if ((order is Order.Scout || order is Order.Analyze) && slot.event is Event.Fog) {
             slot.isRevealed = true
         }
         
@@ -208,7 +214,10 @@ class GameEngine {
             Order.Defend,
             Order.Harvest,
             Order.Delay,
-            Order.Scout
+            Order.Scout,
+            Order.Analyze,
+            Order.Forage,
+            Order.Medkit
         )
     }
 }

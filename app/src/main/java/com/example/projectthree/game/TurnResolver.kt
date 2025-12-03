@@ -26,13 +26,32 @@ object TurnResolver {
         val event = slot.getDisplayEvent()
         val order = slot.order
         
-        // Apply order effects first
+        // Apply order effects first (before event resolution)
         when (order) {
             is Order.Scout -> {
                 if (slot.event is Event.Fog && !slot.isRevealed) {
                     slot.isRevealed = true
                     messages.add("Scout revealed: ${event.name}")
                 }
+            }
+            is Order.Analyze -> {
+                // Analyze gains Intel and reveals Fog if placed on it
+                intelChange += Order.Analyze.intelGain
+                messages.add("Analyze gained ${Order.Analyze.intelGain} Intel")
+                if (slot.event is Event.Fog && !slot.isRevealed) {
+                    slot.isRevealed = true
+                    messages.add("Analyze also revealed the fog!")
+                }
+            }
+            is Order.Forage -> {
+                // Forage gains Supplies
+                suppliesChange += Order.Forage.suppliesGain
+                messages.add("Forage gained ${Order.Forage.suppliesGain} Supplies")
+            }
+            is Order.Medkit -> {
+                // Medkit heals HP (no cap)
+                hpChange += Order.Medkit.healAmount
+                messages.add("Medkit healed ${Order.Medkit.healAmount} HP")
             }
             // Other order effects are applied during event resolution
             else -> {}
@@ -66,8 +85,24 @@ object TurnResolver {
                     amount = (amount * Order.Harvest.bonusMultiplier).toInt()
                     messages.add("Harvest increased supplies!")
                 }
+                // Forage stacks with Supply Drop
+                if (order is Order.Forage) {
+                    amount += Order.Forage.suppliesGain
+                    messages.add("Forage bonus on Supply Drop!")
+                }
                 suppliesChange += amount
                 messages.add("Gained $amount supplies")
+            }
+            
+            is Event.FieldHospital -> {
+                var heal = event.healAmount
+                // Medkit on Field Hospital gives bonus
+                if (order is Order.Medkit) {
+                    heal += Order.Medkit.bonusOnHospital
+                    messages.add("Medkit + Field Hospital bonus!")
+                }
+                hpChange += heal
+                messages.add("Field Hospital healed $heal HP")
             }
             
             is Event.DelayField -> {

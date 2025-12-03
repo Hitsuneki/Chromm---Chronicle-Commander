@@ -31,6 +31,10 @@ data class TimelineSlot(
         // Scout can only be placed on Fog events
         if (order is Order.Scout && event !is Event.Fog) return false
         
+        // Medkit cannot be placed on Enemy Attack slots (optional restriction)
+        // For flexibility, we'll allow it but it won't be very useful
+        
+        // Analyze, Forage, and other orders can be placed on any slot
         return true
     }
 }

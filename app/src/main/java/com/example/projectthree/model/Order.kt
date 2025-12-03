@@ -53,5 +53,42 @@ sealed class Order {
         override val suppliesCost: Int = 0
         override val intelCost: Int = 1
     }
+    
+    /**
+     * Analyze - gains Intel when resolved
+     * Also reveals Fog if placed on it
+     */
+    object Analyze : Order() {
+        override val name: String = "Analyze"
+        override val icon: String = "🔬"
+        override val suppliesCost: Int = 1
+        override val intelCost: Int = 0
+        const val intelGain: Int = 3
+    }
+    
+    /**
+     * Forage - gains Supplies when resolved
+     * Stacks with Supply Drop for bonus
+     */
+    object Forage : Order() {
+        override val name: String = "Forage"
+        override val icon: String = "🍄"
+        override val suppliesCost: Int = 0
+        override val intelCost: Int = 0
+        const val suppliesGain: Int = 4
+    }
+    
+    /**
+     * Medkit - heals HP when resolved
+     * No HP cap, can exceed starting HP
+     */
+    object Medkit : Order() {
+        override val name: String = "Medkit"
+        override val icon: String = "💊"
+        override val suppliesCost: Int = 2
+        override val intelCost: Int = 0
+        const val healAmount: Int = 7
+        const val bonusOnHospital: Int = 3  // Extra heal when combined with Field Hospital
+    }
 }
 

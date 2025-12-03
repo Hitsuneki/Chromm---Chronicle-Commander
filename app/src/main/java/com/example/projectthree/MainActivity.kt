@@ -35,6 +35,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var suppliesValue: TextView
     private lateinit var intelValue: TextView
     private lateinit var waveValue: TextView
+    private lateinit var backButton: Button
     
     private var selectedOrder: Order? = null
     private var isResolving = false
@@ -64,6 +65,7 @@ class MainActivity : AppCompatActivity() {
         timelineRecyclerView = findViewById(R.id.timelineRecyclerView)
         ordersRecyclerView = findViewById(R.id.ordersRecyclerView)
         resolveButton = findViewById(R.id.resolveButton)
+        backButton = findViewById(R.id.backButton)
         
         hpValue = findViewById(R.id.hpValue)
         suppliesValue = findViewById(R.id.suppliesValue)
@@ -72,7 +74,15 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun initializeGame() {
-        gameEngine = GameEngine()
+        // Get difficulty from intent, default to NORMAL
+        val difficultyName = intent.getStringExtra("difficulty") ?: "NORMAL"
+        val difficulty = try {
+            com.example.projectthree.model.Difficulty.valueOf(difficultyName)
+        } catch (e: IllegalArgumentException) {
+            com.example.projectthree.model.Difficulty.NORMAL
+        }
+        
+        gameEngine = GameEngine(difficulty)
         // Don't call updateUI() here - adapters aren't initialized yet
     }
     
@@ -105,6 +115,14 @@ class MainActivity : AppCompatActivity() {
             if (!isResolving) {
                 resolveTurns()
             }
+        }
+        
+        backButton.setOnClickListener {
+            // Return to home screen
+            val intent = android.content.Intent(this, HomeActivity::class.java)
+            intent.flags = android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP
+            startActivity(intent)
+            finish()
         }
     }
     
