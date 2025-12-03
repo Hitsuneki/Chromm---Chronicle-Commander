@@ -169,6 +169,49 @@
                 android:textColor="@color/text_secondary"
                 android:layout_marginBottom="24dp" />
 
+            <!-- RTS Mode -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="RTS Mode"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_light"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="In RTS Mode, events are split into Top Lane and Bottom Lane. Each row shows a turn number and an event for both lanes, so you can read it like: 'Turn 3 – Top: Attack, Bottom: Supply Drop.'"
+                android:textSize="16sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="• Use lane-specific cards (Defend Top, Defend Bottom) to protect specific lanes."
+                android:textSize="16sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="• Use commander powers (Tactical Pause, Airstrike) to manage both fronts."
+                android:textSize="16sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="• Tap tiles to see detailed information about events."
+                android:textSize="16sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginBottom="24dp" />
+
             <!-- Orders -->
             <TextView
                 android:layout_width="wrap_content"

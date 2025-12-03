@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="4dp">
+
+    <!-- Top Lane Section (Left 2 columns) -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:paddingEnd="2dp">
+
+        <!-- Turn Number Tile -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/topTurnNumberCard"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="2dp"
+            app:cardCornerRadius="6dp"
+            app:cardElevation="1dp"
+            app:cardBackgroundColor="@color/card_dark">
+
+            <TextView
+                android:id="@+id/topTurnNumber"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="1"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_light"
+                android:gravity="center"
+                android:padding="8dp" />
+        </androidx.cardview.widget.CardView>
+
+        <!-- Event Tile -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/topEventCard"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:layout_marginStart="2dp"
+            app:cardCornerRadius="6dp"
+            app:cardElevation="1dp"
+            app:cardBackgroundColor="@color/card_dark">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="6dp">
+
+                <TextView
+                    android:id="@+id/topEventIcon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:text="⚔️"
+                    android:textSize="16sp"
+                    android:gravity="center" />
+
+                <TextView
+                    android:id="@+id/topEventLabel"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Attack"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_light"
+                    android:paddingStart="4dp"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+    </LinearLayout>
+
+    <!-- Bottom Lane Section (Right 2 columns) -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:paddingStart="2dp">
+
+        <!-- Turn Number Tile -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/bottomTurnNumberCard"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="2dp"
+            app:cardCornerRadius="6dp"
+            app:cardElevation="1dp"
+            app:cardBackgroundColor="@color/card_dark">
+
+            <TextView
+                android:id="@+id/bottomTurnNumber"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="1"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_light"
+                android:gravity="center"
+                android:padding="8dp" />
+        </androidx.cardview.widget.CardView>
+
+        <!-- Event Tile -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/bottomEventCard"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:layout_marginStart="2dp"
+            app:cardCornerRadius="6dp"
+            app:cardElevation="1dp"
+            app:cardBackgroundColor="@color/card_dark">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="6dp">
+
+                <TextView
+                    android:id="@+id/bottomEventIcon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:text="📦"
+                    android:textSize="16sp"
+                    android:gravity="center" />
+
+                <TextView
+                    android:id="@+id/bottomEventLabel"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Supplies"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_light"
+                    android:paddingStart="4dp"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+    </LinearLayout>
+
+</LinearLayout>
+

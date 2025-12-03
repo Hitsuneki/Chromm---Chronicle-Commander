@@ -6,7 +6,8 @@ package com.example.projectthree.model
 enum class Difficulty {
     EASY,
     NORMAL,
-    HARD
+    HARD,
+    RTS
 }
 
 /**
@@ -21,6 +22,7 @@ object DifficultyConfig {
             Difficulty.EASY -> 60
             Difficulty.NORMAL -> 50
             Difficulty.HARD -> 40
+            Difficulty.RTS -> 50
         }
     }
     
@@ -32,6 +34,7 @@ object DifficultyConfig {
             Difficulty.EASY -> 8
             Difficulty.NORMAL -> 5
             Difficulty.HARD -> 3
+            Difficulty.RTS -> 5
         }
     }
     
@@ -43,6 +46,7 @@ object DifficultyConfig {
             Difficulty.EASY -> 4
             Difficulty.NORMAL -> 2
             Difficulty.HARD -> 1
+            Difficulty.RTS -> 2
         }
     }
     
@@ -55,6 +59,7 @@ object DifficultyConfig {
             Difficulty.EASY -> (baseMax - 1).coerceAtLeast(1)  // Fewer attacks
             Difficulty.NORMAL -> baseMax
             Difficulty.HARD -> (baseMax + 1).coerceAtMost(5)    // More attacks (max 5)
+            Difficulty.RTS -> baseMax
         }
     }
     
@@ -84,6 +89,13 @@ object DifficultyConfig {
                 delayField = 10,
                 fieldHospital = 7      // Less healing
             )
+            Difficulty.RTS -> EventWeights(
+                enemyAttack = 30,
+                supplyDrop = 35,
+                fog = 15,
+                delayField = 12,
+                fieldHospital = 8
+            )
         }
     }
     
@@ -95,7 +107,15 @@ object DifficultyConfig {
             Difficulty.EASY -> 0.8f     // Less damage
             Difficulty.NORMAL -> 1.0f
             Difficulty.HARD -> 1.3f     // More damage
+            Difficulty.RTS -> 1.0f
         }
+    }
+    
+    /**
+     * Check if difficulty uses RTS mode (dual lane layout)
+     */
+    fun isRTSMode(difficulty: Difficulty): Boolean {
+        return difficulty == Difficulty.RTS
     }
 }
 

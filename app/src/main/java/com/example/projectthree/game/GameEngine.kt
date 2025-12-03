@@ -7,9 +7,12 @@ import com.example.projectthree.model.*
  */
 class GameEngine(private val difficulty: Difficulty = Difficulty.NORMAL) {
     var gameState = GameState()
-    var timeline: MutableList<TimelineSlot> = mutableListOf()
+    var topLane: MutableList<TimelineSlot> = mutableListOf()
+    var bottomLane: MutableList<TimelineSlot> = mutableListOf()
     private var currentTurnNumber = 1
     private val eventWeights = DifficultyConfig.getEventWeights(difficulty)
+    var tacticalPauseActive: Boolean = false
+    var airstrikeTarget: TimelineSlot? = null
     
     init {
         initializeGame()
@@ -23,26 +26,50 @@ class GameEngine(private val difficulty: Difficulty = Difficulty.NORMAL) {
             wave = 1,
             maxOrdersPerRound = GameConfig.INITIAL_ORDERS_PER_ROUND
         )
-        generateNewTimeline()
+        generateNewTimelines()
     }
     
     /**
-     * Generate a new timeline with events.
+     * Generate new timelines for both lanes.
      */
-    fun generateNewTimeline() {
+    fun generateNewTimelines() {
         val slotCount = GameConfig.getSlotsForWave(gameState.wave)
-        val events = EventGenerator.generateTimelineEvents(
+        
+        // Generate events for top lane
+        val topEvents = EventGenerator.generateTimelineEvents(
             wave = gameState.wave,
             count = slotCount,
             difficulty = difficulty,
             eventWeights = eventWeights
         )
         
-        timeline.clear()
-        events.forEachIndexed { index, event ->
-            timeline.add(
+        // Generate events for bottom lane
+        val bottomEvents = EventGenerator.generateTimelineEvents(
+            wave = gameState.wave,
+            count = slotCount,
+            difficulty = difficulty,
+            eventWeights = eventWeights
+        )
+        
+        topLane.clear()
+        bottomLane.clear()
+        
+        topEvents.forEachIndexed { index, event ->
+            topLane.add(
                 TimelineSlot(
                     turnNumber = currentTurnNumber + index,
+                    lane = Lane.TOP,
+                    event = event,
+                    isRevealed = event !is Event.Fog
+                )
+            )
+        }
+        
+        bottomEvents.forEachIndexed { index, event ->
+            bottomLane.add(
+                TimelineSlot(
+                    turnNumber = currentTurnNumber + index,
+                    lane = Lane.BOTTOM,
                     event = event,
                     isRevealed = event !is Event.Fog
                 )
@@ -51,15 +78,36 @@ class GameEngine(private val difficulty: Difficulty = Difficulty.NORMAL) {
     }
     
     /**
+     * Get all timeline slots (both lanes combined, for UI display)
+     */
+    fun getAllSlots(): List<TimelineSlot> {
+        val allSlots = mutableListOf<TimelineSlot>()
+        // Interleave top and bottom lanes for display
+        for (i in 0 until maxOf(topLane.size, bottomLane.size)) {
+            if (i < topLane.size) allSlots.add(topLane[i])
+            if (i < bottomLane.size) allSlots.add(bottomLane[i])
+        }
+        return allSlots
+    }
+    
+    /**
+     * Get slot by lane and index
+     */
+    fun getSlot(lane: Lane, index: Int): TimelineSlot? {
+        return when (lane) {
+            Lane.TOP -> if (index < topLane.size) topLane[index] else null
+            Lane.BOTTOM -> if (index < bottomLane.size) bottomLane[index] else null
+        }
+    }
+    
+    /**
      * Try to place an order on a timeline slot.
      * Returns true if successful.
      */
-    fun placeOrder(slotIndex: Int, order: Order): Boolean {
-        if (slotIndex < 0 || slotIndex >= timeline.size) return false
+    fun placeOrder(lane: Lane, slotIndex: Int, order: Order): Boolean {
+        val slot = getSlot(lane, slotIndex) ?: return false
         // No limit on orders per round
         if (!gameState.canAffordOrder(order)) return false
-        
-        val slot = timeline[slotIndex]
         if (!slot.canAcceptOrder(order)) return false
         
         // Place the order
@@ -78,9 +126,8 @@ class GameEngine(private val difficulty: Difficulty = Difficulty.NORMAL) {
     /**
      * Remove an order from a slot (for drag-and-drop).
      */
-    fun removeOrder(slotIndex: Int): Order? {
-        if (slotIndex < 0 || slotIndex >= timeline.size) return null
-        val slot = timeline[slotIndex]
+    fun removeOrder(lane: Lane, slotIndex: Int): Order? {
+        val slot = getSlot(lane, slotIndex) ?: return null
         val order = slot.order ?: return null
         
         // Refund costs
@@ -93,42 +140,107 @@ class GameEngine(private val difficulty: Difficulty = Difficulty.NORMAL) {
     }
     
     /**
-     * Resolve all turns in the timeline.
+     * Use Airstrike commander power to cancel an enemy attack
+     */
+    fun useAirstrike(lane: Lane, slotIndex: Int): Boolean {
+        val slot = getSlot(lane, slotIndex) ?: return false
+        val event = slot.getDisplayEvent()
+        
+        if (event is Event.EnemyAttack || event is Event.BossRaid) {
+            // Replace with a neutral event (Supply Drop)
+            val newSlot = slot.copy(
+                event = Event.SupplyDrop(GameConfig.SUPPLY_DROP_BASE),
+                isRevealed = true
+            )
+            when (lane) {
+                Lane.TOP -> topLane[slotIndex] = newSlot
+                Lane.BOTTOM -> bottomLane[slotIndex] = newSlot
+            }
+            airstrikeTarget = newSlot
+            return true
+        }
+        return false
+    }
+    
+    /**
+     * Resolve all turns in both lanes.
      * Returns a list of results for each turn.
      */
     fun resolveAllTurns(): List<TurnResult> {
         val results = mutableListOf<TurnResult>()
-        val slotsToSkip = mutableSetOf<Int>() // Slots delayed (skip during resolution)
         
-        // First pass: identify delayed slots and apply delay field effects
-        applyDelayEffectsBeforeResolution(slotsToSkip)
+        // Apply delay effects to both lanes
+        applyDelayEffects(topLane)
+        applyDelayEffects(bottomLane)
         
-        // Process each slot in order (skip delayed ones)
-        timeline.forEachIndexed { index, slot ->
-            if (slotsToSkip.contains(index)) {
-                // This slot was delayed, skip it
-                results.add(TurnResult(message = "${slot.getDisplayEvent().name} was delayed"))
-                return@forEachIndexed
+        // Resolve both lanes simultaneously (process turn by turn)
+        val maxSlots = maxOf(topLane.size, bottomLane.size)
+        
+        for (turnIndex in 0 until maxSlots) {
+            // Resolve top lane slot
+            if (turnIndex < topLane.size) {
+                val topSlot = topLane[turnIndex]
+                var topResult = TurnResolver.resolveSlot(topSlot, gameState)
+                
+                // Handle Convoy order (transfer supplies between lanes)
+                if (topSlot.order is Order.Convoy && topSlot.event is Event.SupplyDrop) {
+                    val transferAmount = Order.Convoy.transferAmount
+                    gameState.bottomLaneSupplies += transferAmount
+                    topResult = topResult.copy(
+                        message = topResult.message + ". Convoy transferred $transferAmount supplies to bottom lane"
+                    )
+                }
+                
+                // Apply side effects
+                TurnResolver.applyOrderSideEffects(topSlot, topLane, turnIndex)
+                
+                // Check combo bonuses
+                topResult = TurnResolver.checkComboBonuses(topLane, turnIndex, topResult)
+                
+                // Update game state
+                gameState.hp += topResult.hpChange
+                gameState.supplies += topResult.suppliesChange
+                gameState.intel += topResult.intelChange
+                
+                results.add(topResult.copy(message = "[TOP] ${topResult.message}"))
             }
             
-            var result = TurnResolver.resolveSlot(slot, gameState)
-            
-            // Apply side effects (armor bonuses, etc.)
-            TurnResolver.applyOrderSideEffects(slot, timeline, index)
-            
-            // Check for combo bonuses
-            result = TurnResolver.checkComboBonuses(timeline, index, result)
-            
-            // Update game state
-            gameState.hp += result.hpChange
-            gameState.supplies += result.suppliesChange
-            gameState.intel += result.intelChange
-            
-            results.add(result)
+            // Resolve bottom lane slot
+            if (turnIndex < bottomLane.size) {
+                val bottomSlot = bottomLane[turnIndex]
+                var bottomResult = TurnResolver.resolveSlot(bottomSlot, gameState)
+                
+                // Handle Convoy order
+                if (bottomSlot.order is Order.Convoy && bottomSlot.event is Event.SupplyDrop) {
+                    val transferAmount = Order.Convoy.transferAmount
+                    gameState.topLaneSupplies += transferAmount
+                    bottomResult = bottomResult.copy(
+                        message = bottomResult.message + ". Convoy transferred $transferAmount supplies to top lane"
+                    )
+                }
+                
+                // Apply side effects
+                TurnResolver.applyOrderSideEffects(bottomSlot, bottomLane, turnIndex)
+                
+                // Check combo bonuses
+                bottomResult = TurnResolver.checkComboBonuses(bottomLane, turnIndex, bottomResult)
+                
+                // Update game state
+                gameState.hp += bottomResult.hpChange
+                gameState.supplies += bottomResult.suppliesChange
+                gameState.intel += bottomResult.intelChange
+                
+                results.add(bottomResult.copy(message = "[BOTTOM] ${bottomResult.message}"))
+            }
         }
         
-        // Advance timeline (delayed events will appear in next round)
-        advanceTimeline()
+        // Apply routed supplies from lanes
+        gameState.supplies += gameState.topLaneSupplies + gameState.bottomLaneSupplies
+        gameState.topLaneSupplies = 0
+        gameState.bottomLaneSupplies = 0
+        
+        // Advance timeline (continuous wave pressure - slide in new events)
+        advanceTimelineContinuous()
         
         // Reset round
         gameState.resetRound()
@@ -137,69 +249,56 @@ class GameEngine(private val difficulty: Difficulty = Difficulty.NORMAL) {
     }
     
     /**
-     * Apply delay effects before resolution.
-     * Delay orders: skip the slot during resolution (it will appear in next round)
-     * Delay Field events: shift later events down by swapping positions
+     * Advance timeline continuously - remove all resolved slots, add new ones
+     * This creates a short planning window before the next resolution phase
      */
-    private fun applyDelayEffectsBeforeResolution(slotsToSkip: MutableSet<Int>) {
-        // First, handle Delay Field events (shift later events down)
-        // Process from bottom to top to avoid index issues
-        for (index in timeline.size - 1 downTo 0) {
-            val slot = timeline[index]
-            val event = slot.getDisplayEvent()
-            if (event is Event.DelayField) {
-                // Shift the next event(s) down by one position
-                val shiftAmount = event.shiftAmount
-                for (shift in 1..shiftAmount) {
-                    val sourceIndex = index + shift
-                    val targetIndex = index + shift + 1
-                    if (sourceIndex < timeline.size && targetIndex < timeline.size) {
-                        // Swap slots to shift down - need to create new instances since event is val
-                        val sourceSlot = timeline[sourceIndex]
-                        val targetSlot = timeline[targetIndex]
-                        // Swap: source gets target's event/order, target gets source's event/order
-                        timeline[sourceIndex] = sourceSlot.copy(
-                            event = targetSlot.event,
-                            order = targetSlot.order,
-                            isRevealed = targetSlot.isRevealed,
-                            armorBonus = targetSlot.armorBonus
-                        )
-                        timeline[targetIndex] = targetSlot.copy(
-                            event = sourceSlot.event,
-                            order = sourceSlot.order,
-                            isRevealed = sourceSlot.isRevealed,
-                            armorBonus = sourceSlot.armorBonus
-                        )
-                    }
-                }
-            }
+    private fun advanceTimelineContinuous() {
+        // Remove all resolved slots (all 7 slots were just resolved)
+        val slotsResolved = topLane.size
+        currentTurnNumber += slotsResolved
+        
+        topLane.clear()
+        bottomLane.clear()
+        
+        // Generate new events for both lanes (7 slots each)
+        val slotCount = GameConfig.getSlotsForWave(gameState.wave)
+        val topEvents = EventGenerator.generateTimelineEvents(
+            wave = gameState.wave,
+            count = slotCount,
+            difficulty = difficulty,
+            eventWeights = eventWeights
+        )
+        
+        val bottomEvents = EventGenerator.generateTimelineEvents(
+            wave = gameState.wave,
+            count = slotCount,
+            difficulty = difficulty,
+            eventWeights = eventWeights
+        )
+        
+        topEvents.forEachIndexed { index, event ->
+            topLane.add(
+                TimelineSlot(
+                    turnNumber = currentTurnNumber + index,
+                    lane = Lane.TOP,
+                    event = event,
+                    isRevealed = event !is Event.Fog
+                )
+            )
         }
         
-        // Then, handle Delay orders (mark slot to skip during resolution)
-        timeline.forEachIndexed { index, slot ->
-            if (slot.order is Order.Delay) {
-                slotsToSkip.add(index)
-            }
+        bottomEvents.forEachIndexed { index, event ->
+            bottomLane.add(
+                TimelineSlot(
+                    turnNumber = currentTurnNumber + index,
+                    lane = Lane.BOTTOM,
+                    event = event,
+                    isRevealed = event !is Event.Fog
+                )
+            )
         }
-    }
-    
-    /**
-     * Advance the timeline: remove resolved slots and add new ones.
-     * Delayed events will be preserved and added to the new timeline.
-     */
-    private fun advanceTimeline() {
-        val slotsToRemove = timeline.size
-        currentTurnNumber += slotsToRemove
         
-        // Remove all resolved slots
-        // (Delayed events are lost - they would need to be preserved separately
-        //  but for simplicity, we'll just generate a new timeline)
-        timeline.clear()
-        
-        // Generate new timeline
-        generateNewTimeline()
-        
-        // Increment wave
+        // Increment wave after each full resolution cycle
         gameState.wave++
     }
     
@@ -209,18 +308,50 @@ class GameEngine(private val difficulty: Difficulty = Difficulty.NORMAL) {
     fun isGameOver(): Boolean = gameState.isGameOver()
     
     /**
+     * Apply delay effects to a lane - shift events forward where Delay orders are placed
+     */
+    private fun applyDelayEffects(lane: MutableList<TimelineSlot>) {
+        // Find all Delay orders and their positions
+        val delayPositions = mutableListOf<Int>()
+        for (i in lane.indices) {
+            if (lane[i].order is Order.Delay) {
+                delayPositions.add(i)
+            }
+        }
+
+        // Apply delays from right to left to avoid index shifting issues
+        delayPositions.sortedDescending().forEach { pos ->
+            if (pos + 1 < lane.size) {
+                // Swap the event with the next slot
+                val currentEvent = lane[pos].event
+                val nextEvent = lane[pos + 1].event
+
+                lane[pos] = lane[pos].copy(event = nextEvent)
+                lane[pos + 1] = lane[pos + 1].copy(event = currentEvent)
+
+                // Update reveal status
+                lane[pos].isRevealed = lane[pos].event !is Event.Fog
+                lane[pos + 1].isRevealed = lane[pos + 1].event !is Event.Fog
+            }
+        }
+    }
+
+    /**
      * Get available orders for the current round.
      */
     fun getAvailableOrders(): List<Order> {
         return listOf(
             Order.Defend,
+            Order.DefendTop,
+            Order.DefendBottom,
             Order.Harvest,
             Order.Delay,
             Order.Scout,
             Order.Analyze,
             Order.Forage,
             Order.Medkit,
-            Order.Fortify
+            Order.Fortify,
+            Order.Convoy
         )
     }
 }

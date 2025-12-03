@@ -7,6 +7,10 @@ object GameConfig {
     // Timeline settings - always 7 slots per wave
     const val SLOTS_PER_WAVE = 7
     
+    // Planning timer settings
+    const val PLANNING_TIME_SECONDS = 15L
+    const val TACTICAL_PAUSE_EXTENSION_SECONDS = 10L
+    
     // Starting resources
     const val STARTING_HP = 50
     const val STARTING_SUPPLIES = 5

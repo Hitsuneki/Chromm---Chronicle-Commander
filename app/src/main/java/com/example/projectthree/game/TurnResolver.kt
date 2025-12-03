@@ -78,9 +78,12 @@ object TurnResolver {
                     messages.add("Armor reduced damage by ${slot.armorBonus}")
                 }
                 
-                // Apply Defend order (check for chain bonus)
-                if (order is Order.Defend) {
-                    // Check if this is part of a Defend chain for extra protection
+                // Apply Defend orders (generic or lane-specific)
+                val isDefended = order is Order.Defend || 
+                        (order is Order.DefendTop && slot.lane == Lane.TOP) ||
+                        (order is Order.DefendBottom && slot.lane == Lane.BOTTOM)
+                
+                if (isDefended) {
                     damage = 0
                     messages.add("Defend blocked all damage!")
                     // Defend grants armor for next turn (handled separately)
@@ -119,6 +122,10 @@ object TurnResolver {
                 if (order is Order.Forage) {
                     amount += Order.Forage.suppliesGain
                     messages.add("Forage bonus on Supply Drop!")
+                }
+                // Convoy routes supplies to other lane (handled in GameEngine)
+                if (order is Order.Convoy) {
+                    messages.add("Convoy routing supplies to other lane")
                 }
                 suppliesChange += amount
                 messages.add("Gained $amount supplies")
@@ -184,19 +191,51 @@ object TurnResolver {
     /**
      * Apply side effects from orders (like Defend's armor bonus, Fortify's multi-turn armor)
      */
-    fun applyOrderSideEffects(slot: TimelineSlot, timeline: List<TimelineSlot>, slotIndex: Int) {
+    fun applyOrderSideEffects(slot: TimelineSlot, timeline: MutableList<TimelineSlot>, slotIndex: Int) {
         when (slot.order) {
             is Order.Defend -> {
-                // Grant armor to next turn
+                // Grant armor to next turn (same lane)
                 if (slotIndex < timeline.size - 1) {
-                    timeline[slotIndex + 1].armorBonus += Order.Defend.armorBonus
+                    val nextSlot = timeline[slotIndex + 1]
+                    if (nextSlot.lane == slot.lane) {
+                        timeline[slotIndex + 1] = nextSlot.copy(
+                            armorBonus = nextSlot.armorBonus + Order.Defend.armorBonus
+                        )
+                    }
+                }
+            }
+            is Order.DefendTop -> {
+                // Grant armor to next turn in top lane
+                if (slot.lane == Lane.TOP && slotIndex < timeline.size - 1) {
+                    val nextSlot = timeline[slotIndex + 1]
+                    if (nextSlot.lane == Lane.TOP) {
+                        timeline[slotIndex + 1] = nextSlot.copy(
+                            armorBonus = nextSlot.armorBonus + Order.DefendTop.armorBonus
+                        )
+                    }
+                }
+            }
+            is Order.DefendBottom -> {
+                // Grant armor to next turn in bottom lane
+                if (slot.lane == Lane.BOTTOM && slotIndex < timeline.size - 1) {
+                    val nextSlot = timeline[slotIndex + 1]
+                    if (nextSlot.lane == Lane.BOTTOM) {
+                        timeline[slotIndex + 1] = nextSlot.copy(
+                            armorBonus = nextSlot.armorBonus + Order.DefendBottom.armorBonus
+                        )
+                    }
                 }
             }
             is Order.Fortify -> {
-                // Grant armor to next 2 turns
+                // Grant armor to next 2 turns (same lane)
                 for (i in 1..Order.Fortify.duration) {
                     if (slotIndex + i < timeline.size) {
-                        timeline[slotIndex + i].armorBonus += Order.Fortify.armorBonus
+                        val targetSlot = timeline[slotIndex + i]
+                        if (targetSlot.lane == slot.lane) {
+                            timeline[slotIndex + i] = targetSlot.copy(
+                                armorBonus = targetSlot.armorBonus + Order.Fortify.armorBonus
+                            )
+                        }
                     }
                 }
             }
@@ -208,7 +247,7 @@ object TurnResolver {
      * Check for combo bonuses: same event type streaks and order chains
      */
     fun checkComboBonuses(
-        timeline: List<TimelineSlot>,
+        timeline: MutableList<TimelineSlot>,
         currentIndex: Int,
         result: TurnResult
     ): TurnResult {
@@ -261,7 +300,10 @@ object TurnResolver {
                         messages.add("Defend Chain! Extra protection")
                         // Extra armor is applied in side effects
                         if (currentIndex < timeline.size - 1) {
-                            timeline[currentIndex + 1].armorBonus += 1
+                            val nextSlot = timeline[currentIndex + 1]
+                            timeline[currentIndex + 1] = nextSlot.copy(
+                                armorBonus = nextSlot.armorBonus + 1
+                            )
                         }
                     }
                     is Order.Analyze -> {

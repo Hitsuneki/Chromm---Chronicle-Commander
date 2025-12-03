@@ -24,6 +24,7 @@ class DifficultySelectionActivity : AppCompatActivity() {
         val easyButton: Button = findViewById(R.id.easyButton)
         val normalButton: Button = findViewById(R.id.normalButton)
         val hardButton: Button = findViewById(R.id.hardButton)
+        val rtsButton: Button = findViewById(R.id.rtsButton)
         val backButton: Button = findViewById(R.id.backButton)
         
         easyButton.setOnClickListener {
@@ -36,6 +37,10 @@ class DifficultySelectionActivity : AppCompatActivity() {
         
         hardButton.setOnClickListener {
             startGame(Difficulty.HARD)
+        }
+        
+        rtsButton.setOnClickListener {
+            startGame(Difficulty.RTS)
         }
         
         backButton.setOnClickListener {

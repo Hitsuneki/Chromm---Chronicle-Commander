@@ -1,10 +1,19 @@
 package com.example.projectthree.model
 
 /**
- * Represents a single slot on the timeline.
+ * Represents a lane in the multi-lane timeline.
+ */
+enum class Lane {
+    TOP,
+    BOTTOM
+}
+
+/**
+ * Represents a timeline slot with lane information.
  */
 data class TimelineSlot(
     val turnNumber: Int,
+    val lane: Lane,
     val event: Event,
     var order: Order? = null,
     var isRevealed: Boolean = false, // For Fog events
@@ -31,8 +40,12 @@ data class TimelineSlot(
         // Scout can only be placed on Fog events
         if (order is Order.Scout && event !is Event.Fog) return false
         
-        // Medkit cannot be placed on Enemy Attack slots (optional restriction)
-        // For flexibility, we'll allow it but it won't be very useful
+        // Lane-specific orders must match the lane
+        when (order) {
+            is Order.DefendTop -> if (lane != Lane.TOP) return false
+            is Order.DefendBottom -> if (lane != Lane.BOTTOM) return false
+            else -> {}
+        }
         
         // Analyze, Forage, and other orders can be placed on any slot
         return true

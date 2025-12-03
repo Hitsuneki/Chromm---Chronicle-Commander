@@ -103,5 +103,40 @@ sealed class Order {
         const val armorBonus: Int = 2  // Grants +2 armor for next 2 turns
         const val duration: Int = 2    // Lasts 2 turns
     }
+    
+    /**
+     * Defend Top - lane-specific defend for top lane
+     */
+    object DefendTop : Order() {
+        override val name: String = "Defend Top"
+        override val icon: String = "🛡️↑"
+        override val suppliesCost: Int = 2
+        override val intelCost: Int = 0
+        const val damageReduction: Int = 100
+        const val armorBonus: Int = 1
+    }
+    
+    /**
+     * Defend Bottom - lane-specific defend for bottom lane
+     */
+    object DefendBottom : Order() {
+        override val name: String = "Defend Bottom"
+        override val icon: String = "🛡️↓"
+        override val suppliesCost: Int = 2
+        override val intelCost: Int = 0
+        const val damageReduction: Int = 100
+        const val armorBonus: Int = 1
+    }
+    
+    /**
+     * Convoy - routes resources between lanes
+     */
+    object Convoy : Order() {
+        override val name: String = "Convoy"
+        override val icon: String = "🚚"
+        override val suppliesCost: Int = 1
+        override val intelCost: Int = 0
+        const val transferAmount: Int = 2  // Transfers 2 supplies to other lane
+    }
 }
 

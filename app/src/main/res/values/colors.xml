@@ -18,8 +18,9 @@
     <color name="button_yellow_dark">#FFA500</color>
     
     <!-- Event colors (dark theme) -->
-    <color name="event_attack">#3D2D2D</color>
-    <color name="event_supply">#2D3D2D</color>
-    <color name="event_fog">#2D2D3D</color>
-    <color name="event_delay">#3D3D2D</color>
+    <color name="event_attack">#8B0000</color>  <!-- Red for attacks -->
+    <color name="event_supply">#DAA520</color>  <!-- Gold for supplies -->
+    <color name="event_heal">#228B22</color>  <!-- Green for field hospital -->
+    <color name="event_fog">#708090</color>  <!-- Blue-grey for fog -->
+    <color name="event_delay">#9370DB</color>  <!-- Purple-grey for delay -->
 </resources>

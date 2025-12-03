@@ -2,9 +2,12 @@ package com.example.projectthree
 
 import android.animation.ValueAnimator
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.os.Handler
 import android.os.Looper
+import android.view.View
 import android.widget.Button
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
@@ -12,10 +15,11 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.projectthree.game.GameEngine
-import com.example.projectthree.model.Order
+import com.example.projectthree.model.*
 import com.example.projectthree.ui.OrderAdapter
 import com.example.projectthree.ui.TimelineAdapter
 import kotlinx.coroutines.Dispatchers
@@ -25,25 +29,51 @@ import androidx.lifecycle.lifecycleScope
 
 class MainActivity : AppCompatActivity() {
     private lateinit var gameEngine: GameEngine
-    private lateinit var timelineAdapter: TimelineAdapter
+    private var topLaneAdapter: TimelineAdapter? = null
+    private var bottomLaneAdapter: TimelineAdapter? = null
+    private lateinit var rtsAdapter: com.example.projectthree.ui.RTSTimelineAdapter
     private lateinit var orderAdapter: OrderAdapter
-    private lateinit var timelineRecyclerView: RecyclerView
+    private var topLaneRecyclerView: RecyclerView? = null
+    private var bottomLaneRecyclerView: RecyclerView? = null
+    private lateinit var rtsTimelineRecyclerView: RecyclerView
     private lateinit var ordersRecyclerView: RecyclerView
     private lateinit var resolveButton: Button
+    private lateinit var tacticalPauseButton: Button
+    private lateinit var airstrikeButton: Button
     
     private lateinit var hpValue: TextView
     private lateinit var suppliesValue: TextView
     private lateinit var intelValue: TextView
     private lateinit var waveValue: TextView
     private lateinit var backButton: Button
+    private lateinit var timerText: TextView
+    private lateinit var timerProgress: ProgressBar
+    private lateinit var endButton: Button
+    private lateinit var tooltipText: TextView
     
     private var selectedOrder: Order? = null
     private var isResolving = false
+    private var planningTimer: CountDownTimer? = null
+    private val planningTimeSeconds = 60L // 1 minute
+    private var tacticalPauseActive = false
+    private var airstrikeMode = false  // When true, next slot click will use Airstrike
+    private val tacticalPausePower = CommanderPower.TacticalPause
+    private val airstrikePower = CommanderPower.Airstrike
+    private var isRTSMode = false
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContentView(R.layout.activity_main)
+        
+        // Initialize game first to check difficulty
+        initializeGame()
+        
+        // Set layout based on difficulty
+        if (isRTSMode) {
+            setContentView(R.layout.activity_main_rts)
+        } else {
+            setContentView(R.layout.activity_main)
+        }
         
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -52,25 +82,49 @@ class MainActivity : AppCompatActivity() {
         }
         
         initializeViews()
-        initializeGame()
         setupRecyclerViews()
         updateUI() // Update UI after adapters are initialized
         setupClickListeners()
+        startPlanningTimer(planningTimeSeconds)
+        updateCommanderPowersUI()
         
         // Show tutorial on first run
         showTutorialIfNeeded()
     }
     
+    override fun onDestroy() {
+        super.onDestroy()
+        planningTimer?.cancel()
+    }
+    
     private fun initializeViews() {
-        timelineRecyclerView = findViewById(R.id.timelineRecyclerView)
+        if (isRTSMode) {
+            rtsTimelineRecyclerView = findViewById(R.id.rtsTimelineRecyclerView)
+            tooltipText = findViewById(R.id.tooltipText)
+        } else {
+            topLaneRecyclerView = findViewById(R.id.topLaneRecyclerView)
+            bottomLaneRecyclerView = findViewById(R.id.bottomLaneRecyclerView)
+        }
+        
         ordersRecyclerView = findViewById(R.id.ordersRecyclerView)
         resolveButton = findViewById(R.id.resolveButton)
         backButton = findViewById(R.id.backButton)
+        tacticalPauseButton = findViewById(R.id.tacticalPauseButton)
+        airstrikeButton = findViewById(R.id.airstrikeButton)
         
         hpValue = findViewById(R.id.hpValue)
         suppliesValue = findViewById(R.id.suppliesValue)
         intelValue = findViewById(R.id.intelValue)
         waveValue = findViewById(R.id.waveValue)
+        timerText = findViewById(R.id.timerText)
+        timerProgress = findViewById(R.id.timerProgress)
+        endButton = findViewById(R.id.endButton)
+        
+        // Hide commander powers in classic mode
+        if (!isRTSMode) {
+            tacticalPauseButton.visibility = View.GONE
+            airstrikeButton.visibility = View.GONE
+        }
     }
     
     private fun initializeGame() {
@@ -82,20 +136,46 @@ class MainActivity : AppCompatActivity() {
             com.example.projectthree.model.Difficulty.NORMAL
         }
         
+        isRTSMode = com.example.projectthree.model.DifficultyConfig.isRTSMode(difficulty)
         gameEngine = GameEngine(difficulty)
         // Don't call updateUI() here - adapters aren't initialized yet
     }
     
     private fun setupRecyclerViews() {
-        // Timeline RecyclerView
-        timelineAdapter = TimelineAdapter(
-            gameEngine.timeline.toMutableList(),
-            onSlotClick = { slotIndex ->
-                handleSlotClick(slotIndex)
-            }
-        )
-        timelineRecyclerView.layoutManager = LinearLayoutManager(this)
-        timelineRecyclerView.adapter = timelineAdapter
+        if (isRTSMode) {
+            // RTS Mode: Row-based layout
+            rtsAdapter = com.example.projectthree.ui.RTSTimelineAdapter(
+                topLane = gameEngine.topLane.toMutableList(),
+                bottomLane = gameEngine.bottomLane.toMutableList(),
+                onTopSlotClick = { slotIndex ->
+                    handleSlotClick(Lane.TOP, slotIndex)
+                },
+                onBottomSlotClick = { slotIndex ->
+                    handleSlotClick(Lane.BOTTOM, slotIndex)
+                }
+            )
+            rtsTimelineRecyclerView.layoutManager = LinearLayoutManager(this)
+            rtsTimelineRecyclerView.adapter = rtsAdapter
+        } else {
+            // Classic Mode: Single column per lane
+            topLaneAdapter = TimelineAdapter(
+                gameEngine.topLane.toMutableList(),
+                onSlotClick = { slotIndex ->
+                    handleSlotClick(Lane.TOP, slotIndex)
+                }
+            )
+            topLaneRecyclerView?.layoutManager = LinearLayoutManager(this)
+            topLaneRecyclerView?.adapter = topLaneAdapter
+            
+            bottomLaneAdapter = TimelineAdapter(
+                gameEngine.bottomLane.toMutableList(),
+                onSlotClick = { slotIndex ->
+                    handleSlotClick(Lane.BOTTOM, slotIndex)
+                }
+            )
+            bottomLaneRecyclerView?.layoutManager = LinearLayoutManager(this)
+            bottomLaneRecyclerView?.adapter = bottomLaneAdapter
+        }
         
         // Orders RecyclerView
         orderAdapter = OrderAdapter(
@@ -124,16 +204,143 @@ class MainActivity : AppCompatActivity() {
             startActivity(intent)
             finish()
         }
+        
+        tacticalPauseButton.setOnClickListener {
+            useTacticalPause()
+        }
+        
+        airstrikeButton.setOnClickListener {
+            if (!airstrikePower.isReady()) {
+                Toast.makeText(this, "Airstrike on cooldown (${airstrikePower.currentCooldown} waves)", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            // Enable airstrike targeting mode
+            airstrikeMode = true
+            Toast.makeText(this, "Airstrike ready! Tap an Enemy Attack slot to target it.", Toast.LENGTH_SHORT).show()
+        }
+        
+        endButton.setOnClickListener {
+            if (!isResolving) {
+                resolveTurns()
+            }
+        }
     }
     
-    private fun handleSlotClick(slotIndex: Int) {
+    private fun useTacticalPause() {
+        if (!tacticalPausePower.isReady()) {
+            Toast.makeText(this, "Tactical Pause on cooldown (${tacticalPausePower.currentCooldown} waves)", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        tacticalPausePower.use()
+        tacticalPauseActive = true
+        gameEngine.tacticalPauseActive = true
+        
+        // Extend timer by 10 seconds and slow it down (2x slower)
+        planningTimer?.cancel()
+        startPlanningTimer((planningTimeSeconds + GameConfig.TACTICAL_PAUSE_EXTENSION_SECONDS) * 2)
+        
+        Toast.makeText(this, "Tactical Pause activated! Timer extended.", Toast.LENGTH_SHORT).show()
+        updateCommanderPowersUI()
+    }
+    
+    private fun useAirstrike(lane: Lane, slotIndex: Int) {
+        val success = gameEngine.useAirstrike(lane, slotIndex)
+        if (success) {
+            airstrikePower.use()
+            Toast.makeText(this, "Airstrike! Enemy Attack cancelled.", Toast.LENGTH_SHORT).show()
+            updateUI()
+            updateCommanderPowersUI()
+        }
+    }
+    
+    private fun updateCommanderPowersUI() {
+        // Update Tactical Pause button
+        if (tacticalPausePower.isReady()) {
+            tacticalPauseButton.text = "⏸️ Tactical Pause"
+            tacticalPauseButton.alpha = 1.0f
+        } else {
+            tacticalPauseButton.text = "⏸️ Cooldown: ${tacticalPausePower.currentCooldown}"
+            tacticalPauseButton.alpha = 0.5f
+        }
+        
+        // Update Airstrike button
+        if (airstrikePower.isReady()) {
+            airstrikeButton.text = "✈️ Airstrike"
+            airstrikeButton.alpha = 1.0f
+        } else {
+            airstrikeButton.text = "✈️ Cooldown: ${airstrikePower.currentCooldown}"
+            airstrikeButton.alpha = 0.5f
+        }
+    }
+    
+    private fun startPlanningTimer(seconds: Long) {
+        planningTimer?.cancel()
+        
+        val totalMillis = seconds * 1000
+        timerProgress.max = totalMillis.toInt()
+        timerProgress.progress = totalMillis.toInt()
+        
+        val tickInterval = if (tacticalPauseActive) 200L else 100L  // Slower updates during tactical pause
+        
+        planningTimer = object : CountDownTimer(totalMillis, tickInterval) {
+            override fun onTick(millisUntilFinished: Long) {
+                val totalSeconds = (millisUntilFinished / 1000).toInt()
+                val minutes = totalSeconds / 60
+                val seconds = totalSeconds % 60
+                timerText.text = if (minutes > 0) {
+                    String.format("%d:%02d", minutes, seconds)
+                } else {
+                    "${seconds}s"
+                }
+                timerProgress.progress = millisUntilFinished.toInt()
+                
+                // Flash red when time is running out
+                if (totalSeconds <= 5 && !tacticalPauseActive) {
+                    timerText.setTextColor(android.graphics.Color.parseColor("#E53935"))
+                } else {
+                    timerText.setTextColor(android.graphics.Color.parseColor("#FFFFFF"))
+                }
+            }
+            
+            override fun onFinish() {
+                timerText.text = "0:00"
+                timerProgress.progress = 0
+                // Auto-resolve when timer ends
+                if (!isResolving) {
+                    resolveTurns()
+                }
+            }
+        }.start()
+    }
+    
+    private fun handleSlotClick(lane: Lane, slotIndex: Int) {
         if (isResolving) return
         
-        val slot = gameEngine.timeline[slotIndex]
+        val slot = gameEngine.getSlot(lane, slotIndex) ?: return
+        
+        // Show tooltip in RTS mode
+        if (isRTSMode) {
+            showTooltip(lane, slotIndex, slot)
+        }
+        
+        // Check if Airstrike mode is active
+        if (airstrikeMode) {
+            val event = slot.getDisplayEvent()
+            if (event is Event.EnemyAttack || event is Event.BossRaid) {
+                useAirstrike(lane, slotIndex)
+                airstrikeMode = false
+                return
+            } else {
+                Toast.makeText(this, "Airstrike can only target Enemy Attacks", Toast.LENGTH_SHORT).show()
+                airstrikeMode = false
+                return
+            }
+        }
         
         // If slot already has an order, remove it
         if (slot.order != null) {
-            gameEngine.removeOrder(slotIndex)
+            gameEngine.removeOrder(lane, slotIndex)
             selectedOrder = null
             updateUI()
             Toast.makeText(this, "Order removed", Toast.LENGTH_SHORT).show()
@@ -142,15 +349,13 @@ class MainActivity : AppCompatActivity() {
         
         // If we have a selected order, try to place it
         if (selectedOrder != null) {
-            val success = gameEngine.placeOrder(slotIndex, selectedOrder!!)
+            val success = gameEngine.placeOrder(lane, slotIndex, selectedOrder!!)
             if (success) {
-                Toast.makeText(this, "${selectedOrder!!.name} placed on turn ${slot.turnNumber}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "${selectedOrder!!.name} placed on ${lane.name.lowercase()} lane", Toast.LENGTH_SHORT).show()
                 selectedOrder = null
                 updateUI()
             } else {
                 val reason = when {
-                    gameEngine.gameState.ordersPlacedThisRound >= gameEngine.gameState.maxOrdersPerRound -> 
-                        "Maximum orders per round reached"
                     !gameEngine.gameState.canAffordOrder(selectedOrder!!) -> 
                         "Not enough resources"
                     !slot.canAcceptOrder(selectedOrder!!) -> 
@@ -167,6 +372,7 @@ class MainActivity : AppCompatActivity() {
     private fun resolveTurns() {
         if (isResolving) return
         isResolving = true
+        planningTimer?.cancel()
         resolveButton.isEnabled = false
         
         // Animate through each turn
@@ -175,9 +381,6 @@ class MainActivity : AppCompatActivity() {
             
             // Animate each turn resolution
             for (i in results.indices) {
-                // Highlight the current slot
-                highlightSlot(i)
-                
                 // Show result message
                 val result = results[i]
                 if (result.message.isNotEmpty()) {
@@ -187,28 +390,36 @@ class MainActivity : AppCompatActivity() {
                 // Animate resource changes
                 animateResourceChange(result)
                 
-                delay(800) // Wait before next turn
+                delay(600) // Wait before next turn
             }
+            
+            // Reduce commander power cooldowns
+            tacticalPausePower.reduceCooldown()
+            airstrikePower.reduceCooldown()
             
             // Check game over
             if (gameEngine.isGameOver()) {
                 showGameOverDialog()
             } else {
-                // Update UI and continue
+                // Update UI and start next planning phase
                 updateUI()
                 isResolving = false
-                resolveButton.isEnabled = true
-                Toast.makeText(this@MainActivity, "Wave ${gameEngine.gameState.wave} complete!", Toast.LENGTH_SHORT).show()
+                tacticalPauseActive = false
+                gameEngine.tacticalPauseActive = false
+                
+                // Start new planning timer
+                startPlanningTimer(planningTimeSeconds)
+                updateCommanderPowersUI()
             }
         }
     }
     
-    private fun highlightSlot(index: Int) {
-        val viewHolder = timelineRecyclerView.findViewHolderForAdapterPosition(index)
-        viewHolder?.itemView?.let { view ->
+    private fun highlightSlot(recyclerView: RecyclerView, index: Int) {
+        val viewHolder = recyclerView.findViewHolderForAdapterPosition(index)
+        viewHolder?.itemView?.let { view: View ->
             val animator = ValueAnimator.ofFloat(1.0f, 1.3f, 1.0f)
             animator.duration = 400
-            animator.addUpdateListener { animation ->
+            animator.addUpdateListener { animation: ValueAnimator ->
                 val scale = animation.animatedValue as Float
                 view.scaleX = scale
                 view.scaleY = scale
@@ -279,8 +490,13 @@ class MainActivity : AppCompatActivity() {
         intelValue.text = gameEngine.gameState.intel.toString()
         waveValue.text = gameEngine.gameState.wave.toString()
         
-        // Update timeline
-        timelineAdapter.updateSlots(gameEngine.timeline)
+        // Update timelines
+        if (isRTSMode) {
+            rtsAdapter.updateSlots(gameEngine.topLane, gameEngine.bottomLane)
+        } else {
+            topLaneAdapter?.updateSlots(gameEngine.topLane)
+            bottomLaneAdapter?.updateSlots(gameEngine.bottomLane)
+        }
         
         // Update orders (refresh affordability)
         orderAdapter.notifyDataSetChanged()
@@ -308,25 +524,79 @@ class MainActivity : AppCompatActivity() {
         resolveButton.isEnabled = true
     }
     
+    private fun showTooltip(lane: Lane, slotIndex: Int, slot: TimelineSlot) {
+        if (!isRTSMode) return
+        
+        val event = slot.getDisplayEvent()
+        val eventDetails = when (event) {
+            is Event.EnemyAttack -> "Attack (${event.damage} damage unless Defended)"
+            is Event.BossRaid -> "Boss Raid (${event.damage} damage, Defend reduces by 50%)"
+            is Event.SupplyDrop -> "Supply Drop (Receive ${event.baseAmount} supplies)"
+            is Event.FieldHospital -> "Field Hospital (Restore ${event.healAmount} HP)"
+            is Event.Fog -> if (slot.isRevealed) {
+                when (val hidden = event.hiddenEvent) {
+                    is Event.EnemyAttack -> "Fog: Attack (${hidden.damage} damage)"
+                    is Event.BossRaid -> "Fog: Boss Raid (${hidden.damage} damage)"
+                    else -> "Fog (Revealed)"
+                }
+            } else {
+                "Fog (Hidden event - use Scout/Analyze to reveal)"
+            }
+            is Event.DelayField -> "Delay Field (Shifts events by ${event.shiftAmount} turn)"
+        }
+        
+        val orderText = if (slot.order != null) {
+            " | Order: ${slot.order!!.name}"
+        } else {
+            ""
+        }
+        
+        tooltipText.text = "${lane.name} Lane - Turn ${slot.turnNumber}: $eventDetails$orderText"
+        tooltipText.visibility = View.VISIBLE
+        
+        // Hide tooltip after 3 seconds
+        Handler(Looper.getMainLooper()).postDelayed({
+            tooltipText.visibility = View.GONE
+        }, 3000)
+    }
+    
     private fun showTutorialIfNeeded() {
         // Simple tutorial - could be enhanced with SharedPreferences to track first run
         Handler(Looper.getMainLooper()).postDelayed({
+            val message = if (isRTSMode) {
+                """
+                Welcome to RTS Mode!
+                
+                In RTS Mode, events are split into Top Lane and Bottom Lane.
+                Each row shows a turn number and an event for both lanes.
+                
+                • Use lane-specific cards (Defend Top/Bottom)
+                • Use commander powers (Tactical Pause, Airstrike)
+                • Tap tiles to see details
+                
+                Press RESOLVE to watch turns play out.
+                Survive as long as possible!
+                """.trimIndent()
+            } else {
+                """
+                Welcome to Timeline Commander!
+                
+                You can see future events on the timeline.
+                
+                • Drag orders from the bottom to timeline slots
+                • Defend blocks enemy attacks
+                • Harvest increases supply gains
+                • Delay pushes events later
+                • Scout reveals fog events (costs Intel)
+                
+                Press RESOLVE to watch turns play out.
+                Survive as long as possible!
+                """.trimIndent()
+            }
+            
             AlertDialog.Builder(this)
                 .setTitle("Welcome to Timeline Commander!")
-                .setMessage(
-                    """
-                    You can see future events on the timeline.
-                    
-                    • Drag orders from the bottom to timeline slots
-                    • Defend blocks enemy attacks
-                    • Harvest increases supply gains
-                    • Delay pushes events later
-                    • Scout reveals fog events (costs Intel)
-                    
-                    Press RESOLVE to watch turns play out.
-                    Survive as long as possible!
-                    """.trimIndent()
-                )
+                .setMessage(message)
                 .setPositiveButton("Got it!", null)
                 .show()
         }, 500)

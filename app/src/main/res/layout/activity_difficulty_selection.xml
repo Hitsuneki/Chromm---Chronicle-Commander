@@ -82,6 +82,27 @@
         android:textColor="@color/text_secondary"
         android:layout_marginBottom="32dp" />
 
+    <!-- RTS Mode Button -->
+    <Button
+        android:id="@+id/rtsButton"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:text="RTS Mode"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:backgroundTint="#9C27B0"
+        android:textColor="@color/text_light"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:id="@+id/rtsDescription"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Dual lane layout with commander powers"
+        android:textSize="14sp"
+        android:textColor="@color/text_secondary"
+        android:layout_marginBottom="32dp" />
+
     <!-- Back Button -->
     <Button
         android:id="@+id/backButton"

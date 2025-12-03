@@ -9,7 +9,9 @@ data class GameState(
     var intel: Int = 5,
     var wave: Int = 1,
     var maxOrdersPerRound: Int = Int.MAX_VALUE,  // No limit on orders per round
-    var ordersPlacedThisRound: Int = 0
+    var ordersPlacedThisRound: Int = 0,
+    var topLaneSupplies: Int = 0,  // Supplies routed to top lane
+    var bottomLaneSupplies: Int = 0  // Supplies routed to bottom lane
 ) {
     fun isGameOver(): Boolean = hp <= 0
     
