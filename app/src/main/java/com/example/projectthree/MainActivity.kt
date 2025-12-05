@@ -520,12 +520,7 @@ class MainActivity : AppCompatActivity() {
         waveValue.text = gameEngine.gameState.wave.toString()
         
         // Update timelines
-        if (isRTSMode) {
-            frontPagerAdapter?.updatePages(gameEngine.topLane, gameEngine.bottomLane)
-        } else {
-            topLaneAdapter?.updateSlots(gameEngine.topLane)
-            bottomLaneAdapter?.updateSlots(gameEngine.bottomLane)
-        }
+        frontPagerAdapter?.updatePages(gameEngine.topLane, gameEngine.bottomLane)
         
         // Update orders (refresh affordability)
         orderAdapter.notifyDataSetChanged()
@@ -535,7 +530,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun highlightActiveFront(position: Int) {
-        if (!isRTSMode) return
         val activeColor = android.graphics.Color.parseColor("#FFFFFF")
         val inactiveColor = android.graphics.Color.parseColor("#CCCCCC")
         activeFrontPage = position
