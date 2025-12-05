@@ -46,9 +46,7 @@ object TurnResolver {
                 }
             }
             is Order.Forage -> {
-                // Forage gains Supplies
-                var suppliesGain = Order.Forage.suppliesGain
-                // Check for Forage chain bonus (will be checked in combo bonuses)
+                val suppliesGain = kotlin.random.Random.nextInt(1, 6)
                 suppliesChange += suppliesGain
                 messages.add("Forage gained $suppliesGain Supplies")
             }
@@ -78,10 +76,8 @@ object TurnResolver {
                     messages.add("Armor reduced damage by ${slot.armorBonus}")
                 }
                 
-                // Apply Defend orders (generic or lane-specific)
-                val isDefended = order is Order.Defend || 
-                        (order is Order.DefendTop && slot.lane == Lane.TOP) ||
-                        (order is Order.DefendBottom && slot.lane == Lane.BOTTOM)
+                // Apply Defend order (front-agnostic)
+                val isDefended = order is Order.Defend
                 
                 if (isDefended) {
                     damage = 0
@@ -118,10 +114,11 @@ object TurnResolver {
                     amount = (amount * Order.Harvest.bonusMultiplier).toInt()
                     messages.add("Harvest increased supplies!")
                 }
-                // Forage stacks with Supply Drop
+                // Forage stacks with Supply Drop: add random 1-5
                 if (order is Order.Forage) {
-                    amount += Order.Forage.suppliesGain
-                    messages.add("Forage bonus on Supply Drop!")
+                    val forageBonus = kotlin.random.Random.nextInt(1, 6)
+                    amount += forageBonus
+                    messages.add("Forage bonus +$forageBonus on Supply Drop!")
                 }
                 // Convoy routes supplies to other lane (handled in GameEngine)
                 if (order is Order.Convoy) {
@@ -204,28 +201,7 @@ object TurnResolver {
                     }
                 }
             }
-            is Order.DefendTop -> {
-                // Grant armor to next turn in top lane
-                if (slot.lane == Lane.TOP && slotIndex < timeline.size - 1) {
-                    val nextSlot = timeline[slotIndex + 1]
-                    if (nextSlot.lane == Lane.TOP) {
-                        timeline[slotIndex + 1] = nextSlot.copy(
-                            armorBonus = nextSlot.armorBonus + Order.DefendTop.armorBonus
-                        )
-                    }
-                }
-            }
-            is Order.DefendBottom -> {
-                // Grant armor to next turn in bottom lane
-                if (slot.lane == Lane.BOTTOM && slotIndex < timeline.size - 1) {
-                    val nextSlot = timeline[slotIndex + 1]
-                    if (nextSlot.lane == Lane.BOTTOM) {
-                        timeline[slotIndex + 1] = nextSlot.copy(
-                            armorBonus = nextSlot.armorBonus + Order.DefendBottom.armorBonus
-                        )
-                    }
-                }
-            }
+            
             is Order.Fortify -> {
                 // Grant armor to next 2 turns (same lane)
                 for (i in 1..Order.Fortify.duration) {

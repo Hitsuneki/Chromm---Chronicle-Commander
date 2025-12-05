@@ -40,12 +40,7 @@ data class TimelineSlot(
         // Scout can only be placed on Fog events
         if (order is Order.Scout && event !is Event.Fog) return false
         
-        // Lane-specific orders must match the lane
-        when (order) {
-            is Order.DefendTop -> if (lane != Lane.TOP) return false
-            is Order.DefendBottom -> if (lane != Lane.BOTTOM) return false
-            else -> {}
-        }
+        // All orders are front-agnostic
         
         // Analyze, Forage, and other orders can be placed on any slot
         return true
