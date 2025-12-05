@@ -31,11 +31,15 @@ class MainActivity : AppCompatActivity() {
     private lateinit var gameEngine: GameEngine
     private var topLaneAdapter: TimelineAdapter? = null
     private var bottomLaneAdapter: TimelineAdapter? = null
-    private lateinit var rtsAdapter: com.example.projectthree.ui.RTSTimelineAdapter
+    private var rtsAdapter: com.example.projectthree.ui.RTSTimelineAdapter? = null
+    private var frontPagerAdapter: com.example.projectthree.ui.FrontPagerAdapter? = null
     private lateinit var orderAdapter: OrderAdapter
     private var topLaneRecyclerView: RecyclerView? = null
     private var bottomLaneRecyclerView: RecyclerView? = null
     private lateinit var rtsTimelineRecyclerView: RecyclerView
+    private lateinit var frontPagerRecyclerView: RecyclerView
+    private lateinit var front1Tab: TextView
+    private lateinit var front2Tab: TextView
     private lateinit var ordersRecyclerView: RecyclerView
     private lateinit var resolveButton: Button
     private lateinit var tacticalPauseButton: Button
@@ -60,6 +64,7 @@ class MainActivity : AppCompatActivity() {
     private val tacticalPausePower = CommanderPower.TacticalPause
     private val airstrikePower = CommanderPower.Airstrike
     private var isRTSMode = false
+    private var activeFrontPage = 0
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -99,11 +104,14 @@ class MainActivity : AppCompatActivity() {
     
     private fun initializeViews() {
         if (isRTSMode) {
-            rtsTimelineRecyclerView = findViewById(R.id.rtsTimelineRecyclerView)
+            frontPagerRecyclerView = findViewById(R.id.frontPagerRecyclerView)
             tooltipText = findViewById(R.id.tooltipText)
+            front1Tab = findViewById(R.id.front1Tab)
+            front2Tab = findViewById(R.id.front2Tab)
         } else {
-            topLaneRecyclerView = findViewById(R.id.topLaneRecyclerView)
-            bottomLaneRecyclerView = findViewById(R.id.bottomLaneRecyclerView)
+            frontPagerRecyclerView = findViewById(R.id.frontPagerRecyclerView)
+            front1Tab = findViewById(R.id.front1Tab)
+            front2Tab = findViewById(R.id.front2Tab)
         }
         
         ordersRecyclerView = findViewById(R.id.ordersRecyclerView)
@@ -143,38 +151,29 @@ class MainActivity : AppCompatActivity() {
     
     private fun setupRecyclerViews() {
         if (isRTSMode) {
-            // RTS Mode: Row-based layout
-            rtsAdapter = com.example.projectthree.ui.RTSTimelineAdapter(
+            // RTS Mode: Swipeable fronts
+            frontPagerAdapter = com.example.projectthree.ui.FrontPagerAdapter(
                 topLane = gameEngine.topLane.toMutableList(),
                 bottomLane = gameEngine.bottomLane.toMutableList(),
-                onTopSlotClick = { slotIndex ->
-                    handleSlotClick(Lane.TOP, slotIndex)
-                },
-                onBottomSlotClick = { slotIndex ->
-                    handleSlotClick(Lane.BOTTOM, slotIndex)
-                }
+                onSlotClickTop = { slotIndex -> handleSlotClick(Lane.TOP, slotIndex) },
+                onSlotClickBottom = { slotIndex -> handleSlotClick(Lane.BOTTOM, slotIndex) }
             )
-            rtsTimelineRecyclerView.layoutManager = LinearLayoutManager(this)
-            rtsTimelineRecyclerView.adapter = rtsAdapter
+            frontPagerRecyclerView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+            frontPagerRecyclerView.adapter = frontPagerAdapter
+            val snapHelper = androidx.recyclerview.widget.PagerSnapHelper()
+            snapHelper.attachToRecyclerView(frontPagerRecyclerView)
         } else {
-            // Classic Mode: Single column per lane
-            topLaneAdapter = TimelineAdapter(
-                gameEngine.topLane.toMutableList(),
-                onSlotClick = { slotIndex ->
-                    handleSlotClick(Lane.TOP, slotIndex)
-                }
+            // Classic Mode: Swipeable fronts too
+            frontPagerAdapter = com.example.projectthree.ui.FrontPagerAdapter(
+                topLane = gameEngine.topLane.toMutableList(),
+                bottomLane = gameEngine.bottomLane.toMutableList(),
+                onSlotClickTop = { slotIndex -> handleSlotClick(Lane.TOP, slotIndex) },
+                onSlotClickBottom = { slotIndex -> handleSlotClick(Lane.BOTTOM, slotIndex) }
             )
-            topLaneRecyclerView?.layoutManager = LinearLayoutManager(this)
-            topLaneRecyclerView?.adapter = topLaneAdapter
-            
-            bottomLaneAdapter = TimelineAdapter(
-                gameEngine.bottomLane.toMutableList(),
-                onSlotClick = { slotIndex ->
-                    handleSlotClick(Lane.BOTTOM, slotIndex)
-                }
-            )
-            bottomLaneRecyclerView?.layoutManager = LinearLayoutManager(this)
-            bottomLaneRecyclerView?.adapter = bottomLaneAdapter
+            frontPagerRecyclerView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+            frontPagerRecyclerView.adapter = frontPagerAdapter
+            val snapHelper = androidx.recyclerview.widget.PagerSnapHelper()
+            snapHelper.attachToRecyclerView(frontPagerRecyclerView)
         }
         
         // Orders RecyclerView
@@ -223,6 +222,29 @@ class MainActivity : AppCompatActivity() {
             if (!isResolving) {
                 resolveTurns()
             }
+        }
+
+        if (true) {
+            front1Tab.setOnClickListener {
+                frontPagerRecyclerView.smoothScrollToPosition(0)
+                highlightActiveFront(0)
+            }
+            front2Tab.setOnClickListener {
+                frontPagerRecyclerView.smoothScrollToPosition(1)
+                highlightActiveFront(1)
+            }
+            frontPagerRecyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+                override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                    super.onScrollStateChanged(recyclerView, newState)
+                    if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                        val lm = recyclerView.layoutManager as LinearLayoutManager
+                        val pos = lm.findFirstCompletelyVisibleItemPosition().takeIf { it != RecyclerView.NO_POSITION }
+                            ?: lm.findFirstVisibleItemPosition()
+                        highlightActiveFront(pos)
+                    }
+                }
+            })
+            highlightActiveFront(0)
         }
     }
     
@@ -381,10 +403,17 @@ class MainActivity : AppCompatActivity() {
             
             // Animate each turn resolution
             for (i in results.indices) {
-                // Show result message
                 val result = results[i]
                 if (result.message.isNotEmpty()) {
-                    showFloatingMessage(result.message)
+                    if (!isRTSMode) {
+                        showFloatingMessage(result.message)
+                    } else {
+                        val showTop = activeFrontPage == 0 && result.message.startsWith("[TOP]")
+                        val showBottom = activeFrontPage == 1 && result.message.startsWith("[BOTTOM]")
+                        if (showTop || showBottom) {
+                            showFloatingMessage(result.message.replace("[TOP] ", "").replace("[BOTTOM] ", ""))
+                        }
+                    }
                 }
                 
                 // Animate resource changes
@@ -491,18 +520,21 @@ class MainActivity : AppCompatActivity() {
         waveValue.text = gameEngine.gameState.wave.toString()
         
         // Update timelines
-        if (isRTSMode) {
-            rtsAdapter.updateSlots(gameEngine.topLane, gameEngine.bottomLane)
-        } else {
-            topLaneAdapter?.updateSlots(gameEngine.topLane)
-            bottomLaneAdapter?.updateSlots(gameEngine.bottomLane)
-        }
+        frontPagerAdapter?.updatePages(gameEngine.topLane, gameEngine.bottomLane)
         
         // Update orders (refresh affordability)
         orderAdapter.notifyDataSetChanged()
         
         // Update resolve button (no limit on orders)
         resolveButton.text = "RESOLVE TURNS"
+    }
+
+    private fun highlightActiveFront(position: Int) {
+        val activeColor = android.graphics.Color.parseColor("#FFFFFF")
+        val inactiveColor = android.graphics.Color.parseColor("#CCCCCC")
+        activeFrontPage = position
+        front1Tab.setTextColor(if (position == 0) activeColor else inactiveColor)
+        front2Tab.setTextColor(if (position == 1) activeColor else inactiveColor)
     }
     
     private fun showGameOverDialog() {
@@ -567,12 +599,12 @@ class MainActivity : AppCompatActivity() {
                 """
                 Welcome to RTS Mode!
                 
-                In RTS Mode, events are split into Top Lane and Bottom Lane.
-                Each row shows a turn number and an event for both lanes.
+                Swipe between Front 1 and Front 2 timelines.
+                The HUD (HP, Supplies, Intel, Wave, Timer) is shared.
                 
-                • Use lane-specific cards (Defend Top/Bottom)
+                • Use Defend on the current front
                 • Use commander powers (Tactical Pause, Airstrike)
-                • Tap tiles to see details
+                • Tap slots to see details
                 
                 Press RESOLVE to watch turns play out.
                 Survive as long as possible!

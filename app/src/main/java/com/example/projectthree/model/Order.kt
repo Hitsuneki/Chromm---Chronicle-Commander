@@ -73,7 +73,7 @@ sealed class Order {
     object Forage : Order() {
         override val name: String = "Forage"
         override val icon: String = "🍄"
-        override val suppliesCost: Int = 0
+        override val suppliesCost: Int = 1
         override val intelCost: Int = 0
         const val suppliesGain: Int = 4
     }

@@ -342,8 +342,6 @@ class GameEngine(private val difficulty: Difficulty = Difficulty.NORMAL) {
     fun getAvailableOrders(): List<Order> {
         return listOf(
             Order.Defend,
-            Order.DefendTop,
-            Order.DefendBottom,
             Order.Harvest,
             Order.Delay,
             Order.Scout,

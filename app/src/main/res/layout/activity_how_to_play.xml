@@ -191,7 +191,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="• Use lane-specific cards (Defend Top, Defend Bottom) to protect specific lanes."
+                android:text="• Use Defend to protect the current front you are viewing."
                 android:textSize="16sp"
                 android:textColor="@color/text_secondary"
                 android:layout_marginBottom="4dp" />
@@ -332,7 +332,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Cost: Free\nGains +4 Supplies. Stacks with Supply Drop for bonus."
+                android:text="Cost: 1 Supply\nGain 1–5 Supplies on resolution. If placed on a Supply Drop, add +1–5 on top (stacks with Harvest)."
                 android:textSize="14sp"
                 android:textColor="@color/text_secondary"
                 android:layout_marginBottom="12dp" />
