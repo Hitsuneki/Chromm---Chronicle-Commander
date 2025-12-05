@@ -46,9 +46,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var airstrikeButton: Button
     
     private lateinit var hpValue: TextView
+    private lateinit var armorValue: TextView
     private lateinit var suppliesValue: TextView
     private lateinit var intelValue: TextView
     private lateinit var waveValue: TextView
+    private lateinit var threatValue: TextView
     private lateinit var backButton: Button
     private lateinit var timerText: TextView
     private lateinit var timerProgress: ProgressBar
@@ -121,9 +123,11 @@ class MainActivity : AppCompatActivity() {
         airstrikeButton = findViewById(R.id.airstrikeButton)
         
         hpValue = findViewById(R.id.hpValue)
+        armorValue = findViewById(R.id.armorValue)
         suppliesValue = findViewById(R.id.suppliesValue)
         intelValue = findViewById(R.id.intelValue)
         waveValue = findViewById(R.id.waveValue)
+        threatValue = findViewById(R.id.threatValue)
         timerText = findViewById(R.id.timerText)
         timerProgress = findViewById(R.id.timerProgress)
         endButton = findViewById(R.id.endButton)
@@ -401,25 +405,15 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch(Dispatchers.Main) {
             val results = gameEngine.resolveAllTurns()
             
-            // Animate each turn resolution
-            for (i in results.indices) {
-                val result = results[i]
-                if (result.message.isNotEmpty()) {
-                    if (!isRTSMode) {
-                        showFloatingMessage(result.message)
-                    } else {
-                        val showTop = activeFrontPage == 0 && result.message.startsWith("[TOP]")
-                        val showBottom = activeFrontPage == 1 && result.message.startsWith("[BOTTOM]")
-                        if (showTop || showBottom) {
-                            showFloatingMessage(result.message.replace("[TOP] ", "").replace("[BOTTOM] ", ""))
-                        }
-                    }
-                }
-                
-                // Animate resource changes
+            // Skip per-turn popups; accumulate summary for the whole wave
+            val totalDamageTaken = results.sumOf { if (it.hpChange < 0) -it.hpChange else 0 }
+            val totalSuppliesGained = results.sumOf { if (it.suppliesChange > 0) it.suppliesChange else 0 }
+            val totalIntelGained = results.sumOf { if (it.intelChange > 0) it.intelChange else 0 }
+            
+            // Optional: animate resource updates progressively
+            for (result in results) {
                 animateResourceChange(result)
-                
-                delay(600) // Wait before next turn
+                delay(300)
             }
             
             // Reduce commander power cooldowns
@@ -439,6 +433,13 @@ class MainActivity : AppCompatActivity() {
                 // Start new planning timer
                 startPlanningTimer(planningTimeSeconds)
                 updateCommanderPowersUI()
+                
+                // Show compiled summary after wave computation
+                AlertDialog.Builder(this@MainActivity)
+                    .setTitle("Wave Summary")
+                    .setMessage("Damage taken: $totalDamageTaken\nSupplies gained: $totalSuppliesGained\nIntel gained: $totalIntelGained\n\nNext wave")
+                    .setPositiveButton("OK", null)
+                    .show()
             }
         }
     }
@@ -515,9 +516,18 @@ class MainActivity : AppCompatActivity() {
     private fun updateUI() {
         // Update stats
         hpValue.text = gameEngine.gameState.hp.toString()
+        val laneList = if (activeFrontPage == 0) gameEngine.topLane else gameEngine.bottomLane
+        val currentArmor = laneList.firstOrNull { it.armorBonus > 0 }?.armorBonus ?: 0
+        val plannedFortifyBonus = laneList.indexOfFirst { it.order is Order.Fortify }.let { idx ->
+            if (idx >= 0) Order.Fortify.armorBonus else 0
+        }
+        armorValue.text = maxOf(currentArmor, plannedFortifyBonus).toString()
         suppliesValue.text = gameEngine.gameState.supplies.toString()
         intelValue.text = gameEngine.gameState.intel.toString()
         waveValue.text = gameEngine.gameState.wave.toString()
+        val threat = gameEngine.calculateThreat()
+        val stars = "★".repeat(threat) + "☆".repeat(5 - threat)
+        threatValue.text = stars
         
         // Update timelines
         frontPagerAdapter?.updatePages(gameEngine.topLane, gameEngine.bottomLane)

@@ -191,7 +191,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="• Use Defend to protect the current front you are viewing."
+                android:text="• Armor reduces incoming damage before HP. Defend and Fortify add Armor for limited turns."
                 android:textSize="16sp"
                 android:textColor="@color/text_secondary"
                 android:layout_marginBottom="4dp" />

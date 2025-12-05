@@ -42,7 +42,7 @@
                 android:id="@+id/hpLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="❤️ HP"
+                android:text="❤️"
                 android:textSize="14sp"
                 android:textColor="@color/text_secondary" />
 
@@ -64,10 +64,35 @@
             android:gravity="center">
 
             <TextView
+                android:id="@+id/armorLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🛡 Armor"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary" />
+
+            <TextView
+                android:id="@+id/armorValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_light" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
                 android:id="@+id/suppliesLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="📦 Supplies"
+                android:text="📦"
                 android:textSize="14sp"
                 android:textColor="@color/text_secondary" />
 
@@ -92,7 +117,7 @@
                 android:id="@+id/intelLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="🧠 Intel"
+                android:text="🧠"
                 android:textSize="14sp"
                 android:textColor="@color/text_secondary" />
 
@@ -116,7 +141,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="WAVE"
+                android:text=""
                 android:textSize="12sp"
                 android:textColor="@color/text_secondary" />
 
@@ -128,6 +153,14 @@
                 android:textSize="20sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_light" />
+
+            <TextView
+                android:id="@+id/threatValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="☆☆☆☆☆"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary" />
         </LinearLayout>
 
     </LinearLayout>

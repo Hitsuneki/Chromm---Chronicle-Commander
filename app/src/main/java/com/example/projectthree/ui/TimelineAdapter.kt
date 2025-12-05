@@ -36,7 +36,7 @@ class TimelineAdapter(
         val event = slot.getDisplayEvent()
         
         // Set turn number (just the number)
-        holder.turnNumber.text = slot.turnNumber.toString()
+        holder.turnNumber.text = if (slot.armorBonus > 0) "${slot.turnNumber} 🛡${slot.armorBonus}" else slot.turnNumber.toString()
         
         // Handle fog display
         if (slot.event is Event.Fog && !slot.isRevealed) {

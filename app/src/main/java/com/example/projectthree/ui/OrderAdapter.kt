@@ -17,7 +17,8 @@ class OrderAdapter(
     class OrderViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val orderIcon: TextView = itemView.findViewById(R.id.orderIcon)
         val orderName: TextView = itemView.findViewById(R.id.orderName)
-        val orderCost: TextView = itemView.findViewById(R.id.orderCost)
+        val costSupplies: TextView = itemView.findViewById(R.id.costSupplies)
+        val costIntel: TextView = itemView.findViewById(R.id.costIntel)
         val orderCard: View = itemView.findViewById(R.id.orderCard)
     }
     
@@ -33,19 +34,9 @@ class OrderAdapter(
         holder.orderIcon.text = order.icon
         holder.orderName.text = order.name
         
-        // Show costs
-        val costParts = mutableListOf<String>()
-        if (order.suppliesCost > 0) {
-            costParts.add("📦${order.suppliesCost}")
-        }
-        if (order.intelCost > 0) {
-            costParts.add("🧠${order.intelCost}")
-        }
-        holder.orderCost.text = if (costParts.isEmpty()) {
-            "Free"
-        } else {
-            costParts.joinToString(" ")
-        }
+        // Show costs explicitly as icons + numbers
+        holder.costSupplies.text = "📦${order.suppliesCost}"
+        holder.costIntel.text = "🧠${order.intelCost}"
         
         // Dim if can't afford
         val affordable = canAfford(order)

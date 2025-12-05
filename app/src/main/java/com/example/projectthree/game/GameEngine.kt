@@ -306,6 +306,21 @@ class GameEngine(private val difficulty: Difficulty = Difficulty.NORMAL) {
      * Check if game is over.
      */
     fun isGameOver(): Boolean = gameState.isGameOver()
+
+    fun calculateThreat(): Int {
+        val topAttacks = topLane.count { it.getDisplayEvent() is Event.EnemyAttack }
+        val bottomAttacks = bottomLane.count { it.getDisplayEvent() is Event.EnemyAttack }
+        val bossTop = topLane.count { it.getDisplayEvent() is Event.BossRaid }
+        val bossBottom = bottomLane.count { it.getDisplayEvent() is Event.BossRaid }
+        val difficultyBias = when (difficulty) {
+            Difficulty.EASY -> 0
+            Difficulty.NORMAL -> 1
+            Difficulty.HARD -> 2
+            Difficulty.RTS -> 1
+        }
+        val score = topAttacks + bottomAttacks + (bossTop + bossBottom) * 2 + difficultyBias
+        return score.coerceIn(1, 5)
+    }
     
     /**
      * Apply delay effects to a lane - shift events forward where Delay orders are placed
