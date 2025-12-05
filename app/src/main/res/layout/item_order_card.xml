@@ -2,9 +2,9 @@
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/orderCard"
-    android:layout_width="100dp"
-    android:layout_height="100dp"
-    android:layout_margin="8dp"
+    android:layout_width="80dp"
+    android:layout_height="80dp"
+    android:layout_margin="4dp"
     app:cardCornerRadius="12dp"
     app:cardElevation="4dp"
     app:cardBackgroundColor="@color/card_dark"
@@ -23,14 +23,14 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="🛡️"
-            android:textSize="36sp" />
+            android:textSize="28sp" />
 
         <TextView
             android:id="@+id/orderName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Defend"
-            android:textSize="12sp"
+            android:textSize="11sp"
             android:textStyle="bold"
             android:textColor="@color/text_light"
             android:layout_marginTop="4dp" />

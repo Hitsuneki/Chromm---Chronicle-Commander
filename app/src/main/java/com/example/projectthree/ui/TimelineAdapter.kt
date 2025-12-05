@@ -79,16 +79,19 @@ class TimelineAdapter(
             holder.orderIcon.visibility = View.GONE
         }
         
-        // Color coding for event types (use actual event, not display event for fog)
-        val backgroundColor = when (slot.event) {
+        // Minimal UI: keep uniform dark background for rows, color only the icon
+        holder.slotContainer.setBackgroundColor(
+            ContextCompat.getColor(holder.itemView.context, R.color.card_dark)
+        )
+        val iconColor = when (slot.event) {
             is Event.EnemyAttack -> ContextCompat.getColor(holder.itemView.context, R.color.event_attack)
-            is Event.BossRaid -> ContextCompat.getColor(holder.itemView.context, R.color.event_attack) // Boss uses attack color
+            is Event.BossRaid -> ContextCompat.getColor(holder.itemView.context, R.color.event_attack)
             is Event.SupplyDrop -> ContextCompat.getColor(holder.itemView.context, R.color.event_supply)
-            is Event.FieldHospital -> ContextCompat.getColor(holder.itemView.context, R.color.event_heal) // Use heal color for hospital
+            is Event.FieldHospital -> ContextCompat.getColor(holder.itemView.context, R.color.event_heal)
             is Event.Fog -> ContextCompat.getColor(holder.itemView.context, R.color.event_fog)
             is Event.DelayField -> ContextCompat.getColor(holder.itemView.context, R.color.event_delay)
         }
-        holder.slotContainer.setBackgroundColor(backgroundColor)
+        holder.eventIcon.setTextColor(iconColor)
         
         holder.itemView.setOnClickListener {
             onSlotClick(position)
